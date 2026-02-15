@@ -16,6 +16,7 @@ dependencies:
   - pybedtools=0.9.0
   - pyfaidx=0.7.0
   - bedtools=2.30.0
+  - samtools=1.15
 
   # Statistics
   - scipy=1.9.0

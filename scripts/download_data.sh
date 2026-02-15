@@ -32,6 +32,7 @@ set -euo pipefail
 
 BASE_DIR="/mnt/vstor/SOM_CCCC_JGS25/sayyar/RNAMod-RBNS"
 DATA_DIR="${BASE_DIR}/data"
+CONDA_ENV="rbp_mod_env"
 
 # Cell lines to download
 CELL_LINES=("K562" "HepG2")
@@ -51,6 +52,41 @@ RBPS=(
 log() {
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1"
 }
+
+# ==========================
+# Load Environment for Tools
+# ==========================
+
+log "Setting up environment..."
+
+# Try to load samtools module (HPC systems)
+if command -v module &> /dev/null; then
+    module load samtools 2>/dev/null && log "Loaded samtools module" || true
+fi
+
+# Try to activate conda environment if it exists (for samtools from bioconda)
+if command -v conda &> /dev/null; then
+    eval "$(conda shell.bash hook)" 2>/dev/null || true
+    if conda env list 2>/dev/null | grep -q "^${CONDA_ENV} "; then
+        conda activate "${CONDA_ENV}" 2>/dev/null && log "Activated conda environment: ${CONDA_ENV}" || true
+    fi
+elif [[ -f "${HOME}/miniconda3/bin/conda" ]]; then
+    eval "$(${HOME}/miniconda3/bin/conda shell.bash hook)" 2>/dev/null || true
+    if ${HOME}/miniconda3/bin/conda env list 2>/dev/null | grep -q "^${CONDA_ENV} "; then
+        conda activate "${CONDA_ENV}" 2>/dev/null && log "Activated conda environment: ${CONDA_ENV}" || true
+    fi
+elif [[ -f "${HOME}/anaconda3/bin/conda" ]]; then
+    eval "$(${HOME}/anaconda3/bin/conda shell.bash hook)" 2>/dev/null || true
+    if ${HOME}/anaconda3/bin/conda env list 2>/dev/null | grep -q "^${CONDA_ENV} "; then
+        conda activate "${CONDA_ENV}" 2>/dev/null && log "Activated conda environment: ${CONDA_ENV}" || true
+    fi
+fi
+
+# Check what tools are available
+log "Checking available tools..."
+command -v wget &> /dev/null && log "  wget: available" || log "  wget: NOT FOUND (required)"
+command -v gunzip &> /dev/null && log "  gunzip: available" || log "  gunzip: NOT FOUND (required)"
+command -v samtools &> /dev/null && log "  samtools: available ($(samtools --version | head -1))" || log "  samtools: not found (optional, for FASTA indexing)"
 
 download_file() {
     local url=$1
@@ -127,99 +163,88 @@ log "=============================================="
 log "Downloading eCLIP Data from ENCODE"
 log "=============================================="
 
-# ENCODE eCLIP accession numbers for each RBP (K562 cell line, IDR-filtered peaks)
-# These are representative accessions - actual accessions may vary
-# Format: RBP:ENCFF_accession
+# eCLIP data download using ENCODE API
+# The script will search for IDR-filtered narrowPeak files for each RBP
 
-declare -A ECLIP_K562=(
-    ["IGF2BP1"]="ENCFF440SQJ"
-    ["IGF2BP2"]="ENCFF847FHH"
-    ["HNRNPC"]="ENCFF375VLK"
-    ["TIA1"]="ENCFF833WJZ"
-    ["HNRNPK"]="ENCFF734YGX"
-    ["PCBP2"]="ENCFF147OOF"
-    ["RBFOX2"]="ENCFF504LKE"
-    ["PTBP3"]="ENCFF293SZS"
-    ["TARDBP"]="ENCFF534AWQ"
-    ["QKI"]="ENCFF480CZE"
-    ["SRSF1"]="ENCFF832RVU"
-    ["SRSF9"]="ENCFF456MDA"
-    ["RBM22"]="ENCFF682NMY"
-    ["TRA2A"]="ENCFF396LKQ"
-    ["HNRNPL"]="ENCFF197HRB"
-    ["LIN28B"]="ENCFF735GHR"
-    ["ZNF326"]="ENCFF621IOD"
-    ["FUS"]="ENCFF446MJV"
-    ["MATR3"]="ENCFF168IJP"
-    ["HNRNPA1"]="ENCFF612OZK"
-    ["HNRNPM"]="ENCFF289SOD"
-    ["NONO"]="ENCFF532KMT"
-    ["U2AF2"]="ENCFF039LQG"
-    ["EWSR1"]="ENCFF523XKL"
-)
-
-declare -A ECLIP_HepG2=(
-    ["IGF2BP1"]="ENCFF229UQN"
-    ["IGF2BP2"]="ENCFF156YPO"
-    ["HNRNPC"]="ENCFF695HCY"
-    ["TIA1"]="ENCFF841NVS"
-    ["HNRNPK"]="ENCFF169MGM"
-    ["PCBP2"]="ENCFF445WMN"
-    ["RBFOX2"]="ENCFF368XWL"
-    ["PTBP3"]="ENCFF001RLX"
-    ["TARDBP"]="ENCFF851DUW"
-    ["QKI"]="ENCFF542GHD"
-    ["SRSF1"]="ENCFF001RMB"
-    ["SRSF9"]="ENCFF001RMC"
-    ["RBM22"]="ENCFF001RLY"
-    ["TRA2A"]="ENCFF358WPJ"
-    ["HNRNPL"]="ENCFF851GWT"
-    ["LIN28B"]="ENCFF001RLZ"
-    ["ZNF326"]="ENCFF001RMA"
-    ["FUS"]="ENCFF562WXL"
-    ["MATR3"]="ENCFF001RMD"
-    ["HNRNPA1"]="ENCFF001RME"
-    ["HNRNPM"]="ENCFF741QGT"
-    ["NONO"]="ENCFF001RMF"
-    ["U2AF2"]="ENCFF001RMG"
-    ["EWSR1"]="ENCFF001RMH"
-)
-
-download_eclip() {
+download_eclip_via_api() {
     local rbp=$1
     local cell_line=$2
-    local accession=$3
     local output="${DATA_DIR}/eclip/${rbp}_${cell_line}.bed"
 
-    if [[ -f "${output}" ]]; then
+    if [[ -f "${output}" && -s "${output}" ]]; then
         log "eCLIP exists: ${rbp} ${cell_line}, skipping"
         return 0
     fi
 
-    local url="https://www.encodeproject.org/files/${accession}/@@download/${accession}.bed.gz"
+    log "Searching ENCODE for eCLIP: ${rbp} ${cell_line}..."
+
+    # Use ENCODE API to find the correct file
+    # Looking for: eCLIP, specific RBP target, specific cell line, IDR peaks, bed narrowPeak
+    local api_url="https://www.encodeproject.org/search/?type=File&assay_title=eCLIP&target.label=${rbp}&biosample_ontology.term_name=${cell_line}&file_type=bed+narrowPeak&output_type=IDR+thresholded+peaks&status=released&format=json&limit=1"
+
+    local json_response
+    json_response=$(wget -q -O - "${api_url}" 2>/dev/null) || {
+        log "WARNING: Could not query ENCODE API for ${rbp} ${cell_line}"
+        create_eclip_readme "${rbp}" "${cell_line}" "${output}"
+        return 1
+    }
+
+    # Extract the file accession from JSON response
+    # Using grep/sed since jq may not be available
+    local file_path
+    file_path=$(echo "${json_response}" | grep -o '"href": "/files/[^"]*"' | head -1 | sed 's/"href": "\/files\/\([^/]*\)\/.*"/\1/')
+
+    if [[ -z "${file_path}" || "${file_path}" == "null" ]]; then
+        log "WARNING: No eCLIP data found for ${rbp} ${cell_line} - may need manual search"
+        create_eclip_readme "${rbp}" "${cell_line}" "${output}"
+        return 1
+    fi
+
+    local download_url="https://www.encodeproject.org/files/${file_path}/@@download/${file_path}.bed.gz"
     local temp_file="${output}.gz"
 
-    log "Downloading eCLIP: ${rbp} ${cell_line} (${accession})"
+    log "Downloading eCLIP: ${rbp} ${cell_line} (${file_path})"
 
-    if wget -q --show-progress -O "${temp_file}" "${url}" 2>/dev/null; then
+    if wget -q --show-progress -O "${temp_file}" "${download_url}" 2>/dev/null; then
         gunzip -f "${temp_file}"
-        log "Downloaded: ${rbp} ${cell_line}"
+        if [[ -s "${output}" ]]; then
+            log "Downloaded: ${rbp} ${cell_line} ($(wc -l < "${output}") peaks)"
+        else
+            log "WARNING: Downloaded file is empty for ${rbp} ${cell_line}"
+            rm -f "${output}"
+            create_eclip_readme "${rbp}" "${cell_line}" "${output}"
+        fi
     else
-        log "WARNING: Could not download ${rbp} ${cell_line} - may need manual download"
+        log "WARNING: Could not download ${rbp} ${cell_line}"
         rm -f "${temp_file}"
-        # Create placeholder file with instructions
-        echo "# Download manually from ENCODE: ${rbp} ${cell_line}" > "${output}.README"
-        echo "# Search: https://www.encodeproject.org/search/?type=Experiment&assay_title=eCLIP&target.label=${rbp}&biosample_ontology.term_name=${cell_line}" >> "${output}.README"
+        create_eclip_readme "${rbp}" "${cell_line}" "${output}"
     fi
 }
 
+create_eclip_readme() {
+    local rbp=$1
+    local cell_line=$2
+    local output=$3
+
+    cat > "${output}.README" << EOF
+# Manual download required for ${rbp} eCLIP data (${cell_line})
+#
+# Steps:
+# 1. Go to: https://www.encodeproject.org/search/?type=Experiment&assay_title=eCLIP&target.label=${rbp}&biosample_ontology.term_name=${cell_line}
+# 2. Click on the experiment
+# 3. Under "Files", find "IDR thresholded peaks" with file type "bed narrowPeak"
+# 4. Download the .bed.gz file
+# 5. Extract and save as: ${output}
+#
+# Alternative: Use ENCODE batch download
+# https://www.encodeproject.org/batch_download/?type=File&assay_title=eCLIP&target.label=${rbp}&biosample_ontology.term_name=${cell_line}&file_type=bed+narrowPeak&output_type=IDR+thresholded+peaks
+EOF
+}
+
 for rbp in "${RBPS[@]}"; do
-    if [[ -n "${ECLIP_K562[$rbp]:-}" ]]; then
-        download_eclip "${rbp}" "K562" "${ECLIP_K562[$rbp]}"
-    fi
-    if [[ -n "${ECLIP_HepG2[$rbp]:-}" ]]; then
-        download_eclip "${rbp}" "HepG2" "${ECLIP_HepG2[$rbp]}"
-    fi
+    for cell_line in "${CELL_LINES[@]}"; do
+        download_eclip_via_api "${rbp}" "${cell_line}"
+    done
 done
 
 # ==========================
@@ -230,35 +255,13 @@ log "=============================================="
 log "Downloading RBNS Z-scores"
 log "=============================================="
 
-# RBNS data from Dominguez et al. (2018) supplementary or ENCODE
-# Note: RBNS data format varies - this downloads from ENCODE when available
-
-declare -A RBNS_ACCESSIONS=(
-    ["IGF2BP1"]="ENCFF001RNB"
-    ["IGF2BP2"]="ENCFF001RNC"
-    ["HNRNPC"]="ENCFF001RND"
-    ["TIA1"]="ENCFF001RNE"
-    ["HNRNPK"]="ENCFF001RNF"
-    ["PCBP2"]="ENCFF001RNG"
-    ["RBFOX2"]="ENCFF001RNH"
-    ["PTBP3"]="ENCFF001RNI"
-    ["TARDBP"]="ENCFF001RNJ"
-    ["QKI"]="ENCFF001RNK"
-    ["SRSF1"]="ENCFF001RNL"
-    ["SRSF9"]="ENCFF001RNM"
-    ["RBM22"]="ENCFF001RNN"
-    ["TRA2A"]="ENCFF001RNO"
-    ["HNRNPL"]="ENCFF001RNP"
-    ["LIN28B"]="ENCFF001RNQ"
-    ["ZNF326"]="ENCFF001RNR"
-    ["FUS"]="ENCFF001RNS"
-    ["MATR3"]="ENCFF001RNT"
-    ["HNRNPA1"]="ENCFF001RNU"
-    ["HNRNPM"]="ENCFF001RNV"
-    ["NONO"]="ENCFF001RNW"
-    ["U2AF2"]="ENCFF001RNX"
-    ["EWSR1"]="ENCFF001RNY"
-)
+# RBNS Z-scores must be downloaded from Dominguez et al. (2018) supplementary data
+# The ENCODE RBNS portal has raw data but not pre-computed Z-scores
+#
+# Primary source: Dominguez et al. (2018) Molecular Cell
+# Supplementary Table S2 contains 5-mer Z-scores for all RBPs
+# DOI: 10.1016/j.molcel.2018.06.012
+# Direct link: https://www.cell.com/molecular-cell/supplemental/S1097-2765(18)30437-3
 
 log "Creating template RBNS files..."
 log "NOTE: RBNS Z-scores require manual download from:"
