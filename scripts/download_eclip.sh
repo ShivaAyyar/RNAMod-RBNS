@@ -161,9 +161,9 @@ for key in "${!ECLIP_FILES[@]}"; do
     accession="${ECLIP_FILES[$key]}"
 
     if download_eclip "${rbp}" "${cell_line}" "${accession}"; then
-        ((success_count++))
+        ((++success_count))
     else
-        ((fail_count++))
+        ((++fail_count))
     fi
 done
 
