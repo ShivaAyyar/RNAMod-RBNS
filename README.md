@@ -26,13 +26,16 @@ cd RNAMod-RBNS
 # 2. Setup conda environment (submit as SLURM job)
 sbatch scripts/setup_conda.sh
 
-# 3. Download all prerequisite data (submit as SLURM job)
+# 3. Download reference genome
 sbatch scripts/download_data.sh
 
-# 4. After data download, manually download RBNS Z-scores and modification data
-#    (see download_summary.txt for instructions)
+# 4. Download eCLIP data from ENCODE (automated)
+sbatch scripts/download_eclip.sh
 
-# 5. Run analysis for all 24 RBPs
+# 5. Manually download RBNS Z-scores and modification data
+#    (see docs/DATA_DOWNLOAD.md for instructions)
+
+# 6. Run analysis for all 23 RBPs
 sbatch scripts/submit_job.sh
 
 # Or run just the positive controls (IGF2BP1, IGF2BP2)
@@ -252,38 +255,39 @@ results/{RBP}/
     └── score_comparison.png
 ```
 
-## The 24 Gold Standard RBPs
+## The 23 RBPs
 
 RBPs with both RBNS and ENCODE eCLIP data:
 
-| RBP | Domain | Notes |
-|-----|--------|-------|
-| **IGF2BP1*** | KH | m6A reader (positive control) |
-| **IGF2BP2*** | KH | m6A reader (positive control) |
-| HNRNPC | RRM | Poly-U binding |
-| TIA1 | RRM | Stress granule component |
-| HNRNPK | KH | Poly-C binding |
-| PCBP2 | KH | Poly-C binding |
-| RBFOX2 | RRM | GCAUG motif |
-| PTBP3 | RRM | Splicing regulator |
-| TARDBP | RRM | TDP-43, ALS-associated |
-| QKI | KH | Bipartite motif |
-| SRSF1 | RRM | SR protein |
-| SRSF9 | RRM | SR protein |
-| RBM22 | RRM | Stem-loop binding |
-| TRA2A | RRM | Splicing regulator |
-| HNRNPL | RRM | AC repeats |
-| LIN28B | CSD/ZnF | Let-7 regulation |
-| ZNF326 | ZnF | Structure-dependent |
-| FUS | RRM/ZnF | ALS-associated |
-| MATR3 | RRM | Nuclear matrix |
-| HNRNPA1 | RRM | Splicing repressor |
-| HNRNPM | RRM | G/U-rich binding |
-| NONO | RRM | Paraspeckle component |
-| U2AF2 | RRM | 3' splice site |
-| EWSR1 | RRM/ZnF | FET family |
+| RBP | Domain | K562 | HepG2 | Notes |
+|-----|--------|------|-------|-------|
+| **IGF2BP1*** | KH | ✓ | ✓ | m6A reader (positive control) |
+| **IGF2BP2*** | KH | ✓ | - | m6A reader (positive control) |
+| HNRNPC | RRM | ✓ | ✓ | Poly-U binding |
+| TIA1 | RRM | ✓ | ✓ | Stress granule component |
+| HNRNPK | KH | ✓ | ✓ | Poly-C binding |
+| PCBP2 | KH | - | ✓ | Poly-C binding |
+| RBFOX2 | RRM | ✓ | ✓ | GCAUG motif |
+| PTBP1 | RRM | ✓ | ✓ | Splicing regulator |
+| TARDBP | RRM | ✓ | ✓ | TDP-43, ALS-associated |
+| QKI | KH | ✓ | ✓ | Bipartite motif |
+| SRSF1 | RRM | ✓ | ✓ | SR protein |
+| SRSF9 | RRM | ✓ | ✓ | SR protein |
+| RBM22 | RRM | ✓ | ✓ | Stem-loop binding |
+| TRA2A | RRM | ✓ | ✓ | Splicing regulator |
+| HNRNPL | RRM | ✓ | ✓ | AC repeats |
+| LIN28B | CSD/ZnF | ✓ | ✓ | Let-7 regulation |
+| FUS | RRM/ZnF | ✓ | ✓ | ALS-associated |
+| MATR3 | RRM | ✓ | ✓ | Nuclear matrix |
+| HNRNPA1 | RRM | ✓ | ✓ | Splicing repressor |
+| HNRNPM | RRM | ✓ | ✓ | G/U-rich binding |
+| NONO | RRM | ✓ | - | Paraspeckle component |
+| U2AF2 | RRM | ✓ | ✓ | 3' splice site |
+| EWSR1 | RRM/ZnF | ✓ | - | FET family |
 
 *Known m6A readers - used as positive controls
+
+**Note:** PTBP3 and ZNF326 are not available in ENCODE and have been excluded. PTBP1 is used instead of PTBP3.
 
 ## Methodology
 

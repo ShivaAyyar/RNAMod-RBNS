@@ -7,13 +7,16 @@
 #SBATCH --mem=16G
 #SBATCH --output=/mnt/vstor/SOM_CCCC_JGS25/sayyar/RNAMod-RBNS/logs/%x_%A_%a.out
 #SBATCH --error=/mnt/vstor/SOM_CCCC_JGS25/sayyar/RNAMod-RBNS/logs/%x_%A_%a.err
-#SBATCH --array=0-23
+#SBATCH --array=0-22
 
 # ============================================================================
 # Epitranscriptomic RBP Analysis Pipeline - SLURM Batch Submission Script
 #
-# Processes all 24 "Gold Standard" RBPs from Dominguez et al. (2018) that have
-# both RBNS and ENCODE eCLIP data available.
+# Processes 23 RBPs from Dominguez et al. (2018) that have both RBNS and
+# ENCODE eCLIP data available.
+#
+# Note: PTBP3 replaced with PTBP1 (PTBP3 not in ENCODE)
+#       ZNF326 removed (not in ENCODE)
 #
 # Directory Structure:
 #   /mnt/vstor/SOM_CCCC_JGS25/sayyar/RNAMod-RBNS/
@@ -40,7 +43,7 @@
 #   └── src/
 #
 # Usage:
-#   sbatch scripts/submit_job.sh                    # All 24 RBPs
+#   sbatch scripts/submit_job.sh                    # All 23 RBPs
 #   sbatch --array=0 scripts/submit_job.sh          # IGF2BP1 only
 #   sbatch --array=0-1 scripts/submit_job.sh        # Positive controls only
 #   CELL_LINE=HepG2 sbatch scripts/submit_job.sh    # HepG2 cell line
@@ -71,10 +74,11 @@ CONDA_ENV="rbp_mod_env"
 SRC_DIR="${BASE_DIR}/src"
 
 # ==========================
-# 24 Gold Standard RBPs
+# 23 RBPs with ENCODE eCLIP Data
 # ==========================
-# From research document Section 2.1
+# Based on Dominguez et al. (2018) with ENCODE availability verification
 # IGF2BP1 and IGF2BP2 are known m6A readers (positive controls)
+# Note: PTBP3 replaced with PTBP1, ZNF326 removed (not in ENCODE)
 
 RBPS=(
     "IGF2BP1"   # Index 0  - m6A reader (POSITIVE CONTROL)
@@ -84,7 +88,7 @@ RBPS=(
     "HNRNPK"    # Index 4
     "PCBP2"     # Index 5
     "RBFOX2"    # Index 6
-    "PTBP3"     # Index 7
+    "PTBP1"     # Index 7  - Replaces PTBP3 (not in ENCODE)
     "TARDBP"    # Index 8
     "QKI"       # Index 9
     "SRSF1"     # Index 10
@@ -93,14 +97,13 @@ RBPS=(
     "TRA2A"     # Index 13
     "HNRNPL"    # Index 14
     "LIN28B"    # Index 15
-    "ZNF326"    # Index 16
-    "FUS"       # Index 17
-    "MATR3"     # Index 18
-    "HNRNPA1"   # Index 19
-    "HNRNPM"    # Index 20
-    "NONO"      # Index 21
-    "U2AF2"     # Index 22
-    "EWSR1"     # Index 23
+    "FUS"       # Index 16
+    "MATR3"     # Index 17
+    "HNRNPA1"   # Index 18
+    "HNRNPM"    # Index 19
+    "NONO"      # Index 20
+    "U2AF2"     # Index 21
+    "EWSR1"     # Index 22
 )
 
 # Get current RBP from array index
