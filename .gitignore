@@ -111,3 +111,8 @@ activate_env.sh
 # =============================================================================
 slurm-*.out
 *.README
+data/genome/hg38.fa
+data/mods/K562/m6A.bed
+data/mods/raw/hg38.m6A.tar.gz
+data/mods/raw/human.hg38.m5C.result.col29.bed
+data/mods/raw/human.hg38.m6A.result.col29.bed

@@ -8,6 +8,8 @@
 #SBATCH --output=/mnt/vstor/SOM_CCCC_JGS25/sayyar/RNAMod-RBNS/logs/%x_%A_%a.out
 #SBATCH --error=/mnt/vstor/SOM_CCCC_JGS25/sayyar/RNAMod-RBNS/logs/%x_%A_%a.err
 #SBATCH --array=0-14
+#SBATCH --mail-user=ssa163@case.edu
+#SBATCH --mail-type=END,FAIL
 
 # ============================================================================
 # Epitranscriptomic RBP Analysis Pipeline - SLURM Batch Submission Script
