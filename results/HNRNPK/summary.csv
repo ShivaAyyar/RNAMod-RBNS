@@ -1,0 +1,2 @@
+rbp,cell_line,timestamp,n_kmers,n_peaks_initial,n_peaks_filtered,n_canonical,n_discrepant,n_intermediate,n_significant
+HNRNPK,K562,2026-02-16T22:43:02.943329,1024,4919,4919,4440,8,471,0

@@ -1,0 +1,2 @@
+rbp,cell_line,timestamp,n_kmers,n_peaks_initial,n_peaks_filtered,n_canonical,n_discrepant,n_intermediate,n_significant
+SRSF9,K562,2026-02-16T22:44:13.615437,1024,270,270,143,7,120,0

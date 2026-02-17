@@ -1,0 +1,2 @@
+rbp,cell_line,timestamp,n_kmers,n_peaks_initial,n_peaks_filtered,n_canonical,n_discrepant,n_intermediate,n_significant
+TRA2A,K562,2026-02-16T22:42:58.937303,1024,1741,1741,1680,15,46,0

@@ -1,0 +1,2 @@
+rbp,cell_line,timestamp,n_kmers,n_peaks_initial,n_peaks_filtered,n_canonical,n_discrepant,n_intermediate,n_significant
+TARDBP,K562,2026-02-16T22:44:13.614505,1024,7010,7010,6915,1,94,0

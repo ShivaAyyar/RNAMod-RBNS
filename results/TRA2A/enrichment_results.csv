@@ -1,0 +1,5 @@
+modification,canonical_overlap,canonical_total,canonical_pct,discrepant_overlap,discrepant_total,discrepant_pct,odds_ratio,pvalue,pvalue_adj,significant,rbp,cell_line
+m6A,0,1680,0.0,0,15,0.0,,1.0,1.0,False,TRA2A,K562
+pseudoU,0,1680,0.0,0,15,0.0,,1.0,1.0,False,TRA2A,K562
+m5C,0,1680,0.0,0,15,0.0,,1.0,1.0,False,TRA2A,K562
+ac4C,0,1680,0.0,0,15,0.0,,1.0,1.0,False,TRA2A,K562
