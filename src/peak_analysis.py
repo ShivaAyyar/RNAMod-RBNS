@@ -323,7 +323,9 @@ def scored_df_to_bed(
             coords = peak_id
             strand = '.'
 
-        chrom, positions = coords.split(':')
+        # Use rsplit to handle chromosome names with colons (e.g., chrUn_gl000220)
+        # Split from the right to get the last colon which separates chrom from positions
+        chrom, positions = coords.rsplit(':', 1)
         start, end = positions.split('-')
 
         # BED format: chrom, start, end, name, score, strand
