@@ -8,13 +8,18 @@
 data/genome/*
 data/eclip/*.bed
 data/rbns/*.csv
-data/mods/
+data/rbns/*.tsv
+data/mods/K562/*.bed
+data/mods/HepG2/*.bed
+data/mods/raw/
+data/reference/
 data/download_summary.txt
 
 # Keep directory structure with .gitkeep files
 !data/genome/.gitkeep
 !data/eclip/.gitkeep
 !data/rbns/.gitkeep
+!data/mods/.gitkeep
 !data/mods/K562/.gitkeep
 !data/mods/HepG2/.gitkeep
 

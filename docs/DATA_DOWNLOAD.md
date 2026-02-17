@@ -217,46 +217,54 @@ GCACG,7.23,2.89
 ...
 ```
 
-## Step 4: Download RNA Modification Sites (Manual)
+## Step 4: Download and Process RNA Modification Sites
 
-### 4a. m6A Sites from REPIC
+All modification data comes from **RMBase v3.0** (http://rna.sysu.edu.cn/rmbase/).
 
-1. Go to: https://repicmod.uchicago.edu/download
-
-2. Select:
-   - Species: **Human**
-   - Cell Line: **K562** (and repeat for **HepG2**)
-   - Modification: **m6A**
-
-3. Download the consensus peaks (BED format)
-
-4. Save to: `data/mods/K562/m6A.bed` and `data/mods/HepG2/m6A.bed`
-
-### 4b. Pseudouridine (Ψ), m5C, ac4C from RMBase
+### 4a. Download RMBase Files
 
 1. Go to: http://rna.sysu.edu.cn/rmbase/download.html
 
-2. For each modification type, select:
-   - Species: **Homo sapiens**
-   - Assembly: **hg38**
-   - Cell Line: **K562** or **HepG2**
-   - Modification: **pseudoU**, **m5C**, or **ac4C**
+2. Download the following files for **Human (hg38)**:
+   - `hg38.m6A.tar.gz` (~63 MB)
+   - `hg38.Pseudo.tar.gz` (~360 KB) - Pseudouridine (Ψ)
+   - `hg38.m5C.tar.gz` (~2.3 MB)
+   - `hg38.ac4C.tar.gz` (~195 KB)
 
-3. Download the BED file
+3. Save all files to: `data/mods/`
 
-4. Save to appropriate location:
-   - `data/mods/K562/pseudoU.bed`
-   - `data/mods/K562/m5C.bed`
-   - `data/mods/K562/ac4C.bed`
-   - (Repeat for HepG2)
+### 4b. Process RMBase Files
 
-### Expected BED Format
+Run the processing script to extract cell-line-specific BED files:
 
-Modification BED files should have at least 6 columns:
+```bash
+# Process all modifications for K562 and HepG2
+python scripts/process_rmbase_mods.py --setup-all
 ```
-chr1    1000    1001    mod_site_1    .    +
-chr1    2000    2001    mod_site_2    .    -
+
+This script will:
+- Extract the tar.gz archives
+- Filter m6A for HepG2-specific sites (178,800 sites)
+- For K562: use all m6A sites with support ≥2 (558,360 sites) since K562 m6A is not profiled in RMBase
+- Use all Ψ, m5C, ac4C sites for both cell lines (not cell-line-specific in RMBase)
+
+### Data Availability Summary
+
+| Modification | K562 Sites | HepG2 Sites | Notes |
+|--------------|------------|-------------|-------|
+| **m6A** | 558,360 | 178,800 | HepG2 cell-specific; K562 uses all sites |
+| **Ψ (Pseudo)** | 5,705 | 5,705 | Same sites (not cell-specific) |
+| **m5C** | 46,025 | 46,025 | Same sites (not cell-specific) |
+| **ac4C** | 1,861 | 1,861 | Same sites (not cell-specific) |
+
+### Output BED6 Format
+
 ```
+chr1    14414    14415    m6A_site_1    674    -
+chr1    14626    14627    m6A_site_4    728    -
+```
+
+Columns: chrom, start, end, modID, score (motif_score * 200), strand
 
 ## Step 5: Verify Downloads
 
