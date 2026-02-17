@@ -9,13 +9,13 @@ This document provides step-by-step instructions for downloading all required da
 | Reference Genome (hg38) | UCSC | Yes | No |
 | Chromosome Sizes | UCSC | Yes | No |
 | eCLIP Peaks | ENCODE | **Yes** | No |
-| RBNS Z-scores | Dominguez et al. (2018) | No | Yes |
+| RBNS R-values/Z-scores | ENCODE | **Yes** | No |
 | m6A Sites | REPIC | No | Yes |
 | Ψ, m5C, ac4C Sites | RMBase | No | Yes |
 
-## The 23 RBPs
+## The 15 Analyzable RBPs
 
-Based on Dominguez et al. (2018) with ENCODE availability verification:
+Only **15 RBPs** have BOTH eCLIP and RBNS data available in ENCODE:
 
 | RBP | K562 | HepG2 | Notes |
 |-----|------|-------|-------|
@@ -26,24 +26,26 @@ Based on Dominguez et al. (2018) with ENCODE availability verification:
 | HNRNPK | ✓ | ✓ | |
 | PCBP2 | - | ✓ | HepG2 only |
 | RBFOX2 | ✓ | ✓ | |
-| PTBP1 | ✓ | ✓ | Replaces PTBP3 (not in ENCODE) |
 | TARDBP | ✓ | ✓ | |
-| QKI | ✓ | ✓ | |
-| SRSF1 | ✓ | ✓ | |
 | SRSF9 | ✓ | ✓ | |
 | RBM22 | ✓ | ✓ | |
 | TRA2A | ✓ | ✓ | |
 | HNRNPL | ✓ | ✓ | |
 | LIN28B | ✓ | ✓ | |
 | FUS | ✓ | ✓ | |
-| MATR3 | ✓ | ✓ | |
-| HNRNPA1 | ✓ | ✓ | |
-| HNRNPM | ✓ | ✓ | |
-| NONO | ✓ | - | K562 only |
-| U2AF2 | ✓ | ✓ | |
 | EWSR1 | ✓ | - | K562 only |
 
-**Note:** ZNF326 and PTBP3 are not available in ENCODE and have been excluded.
+### RBPs WITHOUT RBNS Data (Cannot Analyze)
+
+The following 8 RBPs have eCLIP data but **lack RBNS data** in ENCODE:
+- PTBP1 (only PTBP3 has RBNS)
+- QKI
+- SRSF1
+- MATR3
+- HNRNPA1 (only HNRNPA1L2 has RBNS)
+- HNRNPM
+- NONO
+- U2AF2
 
 ## Step 1: Download Reference Genome (Automated)
 
@@ -64,7 +66,7 @@ This downloads:
 
 ## Step 2: Download eCLIP Data (Automated)
 
-**NEW: Use the automated download script:**
+**Use the automated download script:**
 
 ```bash
 # Submit as SLURM job (recommended)
@@ -133,33 +135,87 @@ For reference, here are the ENCODE accessions used:
 | HNRNPM | ENCFF752JNY |
 | U2AF2 | ENCFF721PWF |
 
-## Step 3: Download RBNS Z-scores (Manual)
+## Step 3: Download RBNS Data (Automated)
 
-### Source: Dominguez et al. (2018) Supplementary Data
+**NEW: Use the automated ENCODE RBNS download script:**
 
-1. Go to: https://www.cell.com/molecular-cell/supplemental/S1097-2765(18)30437-3
+```bash
+# Submit as SLURM job (recommended)
+sbatch scripts/download_rbns.sh
 
-2. Download **Table S2** (Excel file containing 5-mer Z-scores)
+# Or run interactively
+bash scripts/download_rbns.sh
+```
 
-3. For each RBP, extract the k-mer Z-scores and save as CSV:
+This script downloads pre-computed 5-mer R-value enrichment files from ENCODE for all 15 RBPs with RBNS data.
 
-**Required CSV format:**
-```csv
-kmer,z_score
-AAAAA,0.23
-AAAAC,0.45
-AAAAG,0.12
+### Process RBNS Files
+
+After downloading, convert R-values to Z-scores:
+
+```bash
+# Convert all downloaded enrichment files to Z-scores
+python scripts/process_rbns_enrichment.py
+
+# Or process a single file
+python scripts/process_rbns_enrichment.py --single data/rbns/IGF2BP1_enrichment.tsv data/rbns/IGF2BP1_zscores.csv
+
+# Validate output files
+python scripts/process_rbns_enrichment.py --validate data/rbns
+```
+
+### RBNS File Accessions Reference
+
+| RBP | Experiment | 5-mer File |
+|-----|------------|------------|
+| IGF2BP1 | ENCSR928XOW | ENCFF157MJN |
+| IGF2BP2 | ENCSR588GYZ | ENCFF446BRC |
+| HNRNPC | ENCSR569UIU | ENCFF592FMJ |
+| TIA1 | ENCSR064NOY | ENCFF936GUV |
+| HNRNPK | ENCSR368NMO | ENCFF715DIL |
+| PCBP2 | ENCSR673FLQ | ENCFF761GIK |
+| RBFOX2 | ENCSR441HLP | ENCFF002DFE |
+| TARDBP | ENCSR466JPT | ENCFF022PDN |
+| SRSF9 | ENCSR724HZI | ENCFF518QQO |
+| RBM22 | ENCSR006TPX | ENCFF688EDA |
+| TRA2A | ENCSR741VUK | ENCFF191NLM |
+| HNRNPL | ENCSR954TYO | ENCFF422OAC |
+| LIN28B | ENCSR369RLA | ENCFF189NSX |
+| FUS | ENCSR936LOF | ENCFF835DNX |
+| EWSR1 | ENCSR063HQO | ENCFF100OEJ |
+
+### ENCODE RBNS File Format
+
+The downloaded enrichment TSV files have this format:
+```
+[RBP_NAME]    0    5    20    80    320    1300
+AAAAA    0.98    1.00    1.02    1.05    1.08    1.10
+AAAAC    0.97    0.99    1.01    1.04    1.07    1.09
 ...
 ```
 
-4. Save each RBP's data to: `data/rbns/{RBP}_zscores.csv`
+- First row: header with RBP name and protein concentrations (nM)
+- First column: 5-mer sequence
+- Values: R-values (enrichment ratios relative to input)
+- ~970 5-mers per file (1024 minus adapter-containing k-mers)
 
-### Notes on RBNS Data
+### Z-score Calculation
 
-- The supplementary table contains Z-scores for 5-mers (1024 possible k-mers)
-- Z-scores represent enrichment relative to input library
-- Higher Z-scores indicate stronger binding affinity
-- Use DNA notation (T, not U) - the pipeline converts automatically
+The processing script converts R-values to Z-scores using:
+
+```
+Z = (R - mean_R) / std_R
+```
+
+Where R is the R-value at the highest protein concentration (e.g., 1300 nM).
+
+Output CSV format:
+```csv
+kmer,z_score,r_value
+GCAUG,8.45,3.25
+GCACG,7.23,2.89
+...
+```
 
 ## Step 4: Download RNA Modification Sites (Manual)
 
@@ -212,8 +268,11 @@ cd /mnt/vstor/SOM_CCCC_JGS25/sayyar/RNAMod-RBNS
 # Check eCLIP files
 ls -la data/eclip/*.bed | wc -l  # Should be 41
 
-# Check RBNS files
-ls -la data/rbns/*.csv | wc -l   # Should be 23
+# Check RBNS enrichment files (downloaded)
+ls -la data/rbns/*_enrichment.tsv | wc -l  # Should be 15
+
+# Check RBNS Z-score files (after processing)
+ls -la data/rbns/*_zscores.csv | wc -l     # Should be 15
 
 # Check modification files
 ls -la data/mods/K562/*.bed      # Should be 4
@@ -233,9 +292,11 @@ data/
 │   ├── IGF2BP2_K562.bed      # K562 only
 │   └── ... (41 files total)
 ├── rbns/
-│   ├── IGF2BP1_zscores.csv
+│   ├── IGF2BP1_enrichment.tsv  # Downloaded from ENCODE
+│   ├── IGF2BP1_zscores.csv     # Processed Z-scores
+│   ├── IGF2BP2_enrichment.tsv
 │   ├── IGF2BP2_zscores.csv
-│   └── ... (23 files total)
+│   └── ... (15 RBPs with both files)
 └── mods/
     ├── K562/
     │   ├── m6A.bed
@@ -254,7 +315,7 @@ data/
 Once all data is in place:
 
 ```bash
-# Run for all 23 RBPs (K562)
+# Run for all 15 RBPs (K562)
 sbatch scripts/submit_job.sh
 
 # Run just the positive controls first
@@ -275,13 +336,18 @@ CELL_LINE=HepG2 sbatch scripts/submit_job.sh
 - Check that modification BED files use hg38 coordinates
 
 ### RBNS Z-score parsing errors
-- Ensure CSV has header row with `kmer` and `z_score` columns
+- Ensure CSV has header row with `kmer`, `z_score`, and `r_value` columns
+- Run the validation: `python scripts/process_rbns_enrichment.py --validate data/rbns`
 - Check for extra whitespace or special characters
 
 ### Cell-line mismatch
 - PCBP2 only has HepG2 data
-- IGF2BP2, NONO, EWSR1 only have K562 data
+- IGF2BP2, EWSR1 only have K562 data
 - Analysis will skip missing combinations
+
+### RBNS data not available
+- 8 RBPs (PTBP1, QKI, SRSF1, MATR3, HNRNPA1, HNRNPM, NONO, U2AF2) lack RBNS data
+- These cannot be analyzed with this pipeline
 
 ## References
 

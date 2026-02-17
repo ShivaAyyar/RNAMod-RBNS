@@ -32,10 +32,15 @@ sbatch scripts/download_data.sh
 # 4. Download eCLIP data from ENCODE (automated)
 sbatch scripts/download_eclip.sh
 
-# 5. Manually download RBNS Z-scores and modification data
-#    (see docs/DATA_DOWNLOAD.md for instructions)
+# 5. Download RBNS 5-mer enrichment files from ENCODE
+sbatch scripts/download_rbns.sh
 
-# 6. Run analysis for all 23 RBPs
+# 6. Convert RBNS R-values to Z-scores
+python scripts/process_rbns_enrichment.py
+
+# 7. Manually download modification data (see docs/DATA_DOWNLOAD.md)
+
+# 8. Run analysis for all 15 RBPs
 sbatch scripts/submit_job.sh
 
 # Or run just the positive controls (IGF2BP1, IGF2BP2)
@@ -201,10 +206,10 @@ python src/main.py \
 
 ### Batch Analysis (SLURM)
 
-For HPC environments, use the provided SLURM script to analyze all 24 Gold Standard RBPs:
+For HPC environments, use the provided SLURM script to analyze all 15 RBPs with RBNS data:
 
 ```bash
-# Submit array job (all 24 RBPs)
+# Submit array job (all 15 RBPs)
 sbatch scripts/submit_job.sh
 
 # Submit subset (positive controls only)
@@ -255,9 +260,9 @@ results/{RBP}/
     └── score_comparison.png
 ```
 
-## The 23 RBPs
+## The 15 Analyzable RBPs
 
-RBPs with both RBNS and ENCODE eCLIP data:
+Only 15 RBPs have BOTH RBNS and eCLIP data available in ENCODE:
 
 | RBP | Domain | K562 | HepG2 | Notes |
 |-----|--------|------|-------|-------|
@@ -268,26 +273,18 @@ RBPs with both RBNS and ENCODE eCLIP data:
 | HNRNPK | KH | ✓ | ✓ | Poly-C binding |
 | PCBP2 | KH | - | ✓ | Poly-C binding |
 | RBFOX2 | RRM | ✓ | ✓ | GCAUG motif |
-| PTBP1 | RRM | ✓ | ✓ | Splicing regulator |
 | TARDBP | RRM | ✓ | ✓ | TDP-43, ALS-associated |
-| QKI | KH | ✓ | ✓ | Bipartite motif |
-| SRSF1 | RRM | ✓ | ✓ | SR protein |
 | SRSF9 | RRM | ✓ | ✓ | SR protein |
 | RBM22 | RRM | ✓ | ✓ | Stem-loop binding |
 | TRA2A | RRM | ✓ | ✓ | Splicing regulator |
 | HNRNPL | RRM | ✓ | ✓ | AC repeats |
 | LIN28B | CSD/ZnF | ✓ | ✓ | Let-7 regulation |
 | FUS | RRM/ZnF | ✓ | ✓ | ALS-associated |
-| MATR3 | RRM | ✓ | ✓ | Nuclear matrix |
-| HNRNPA1 | RRM | ✓ | ✓ | Splicing repressor |
-| HNRNPM | RRM | ✓ | ✓ | G/U-rich binding |
-| NONO | RRM | ✓ | - | Paraspeckle component |
-| U2AF2 | RRM | ✓ | ✓ | 3' splice site |
 | EWSR1 | RRM/ZnF | ✓ | - | FET family |
 
 *Known m6A readers - used as positive controls
 
-**Note:** PTBP3 and ZNF326 are not available in ENCODE and have been excluded. PTBP1 is used instead of PTBP3.
+**Note:** 8 RBPs lack RBNS data in ENCODE and cannot be analyzed: PTBP1, QKI, SRSF1, MATR3, HNRNPA1, HNRNPM, NONO, U2AF2.
 
 ## Methodology
 
