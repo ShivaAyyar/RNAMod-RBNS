@@ -1,5 +1,5 @@
 modification,canonical_overlap,canonical_total,canonical_pct,discrepant_overlap,discrepant_total,discrepant_pct,odds_ratio,pvalue,pvalue_adj,significant,rbp,cell_line
-m6A,0,143,0.0,0,7,0.0,,1.0,1.0,False,SRSF9,K562
-pseudoU,0,143,0.0,0,7,0.0,,1.0,1.0,False,SRSF9,K562
-m5C,0,143,0.0,0,7,0.0,,1.0,1.0,False,SRSF9,K562
-ac4C,0,143,0.0,0,7,0.0,,1.0,1.0,False,SRSF9,K562
+m6A,40,143,27.972027972027973,1,7,14.285714285714285,0.42916666666666664,0.8986882466042542,1.0,False,SRSF9,K562
+pseudoU,4,143,2.797202797202797,0,7,0.0,0.0,1.0,1.0,False,SRSF9,K562
+m5C,39,143,27.27272727272727,0,7,0.0,0.0,1.0,1.0,False,SRSF9,K562
+ac4C,3,143,2.097902097902098,0,7,0.0,0.0,1.0,1.0,False,SRSF9,K562
