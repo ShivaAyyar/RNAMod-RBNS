@@ -132,13 +132,10 @@ Some data requires manual download due to database terms:
 
 1. **RBNS Z-scores**: Download from [Dominguez et al. (2018) Supplementary Table S2](https://www.cell.com/molecular-cell/supplemental/S1097-2765(18)30437-3)
 
-2. **m6A modification sites**: Download from [REPIC](https://repicmod.uchicago.edu/)
-   - Select Human → K562 or HepG2
-   - Download consensus m6A peaks
-
-3. **Ψ, m5C, ac4C sites**: Download from [RMBase v2.0](http://rna.sysu.edu.cn/rmbase/)
-   - Select species: Human (hg38)
-   - Select cell line and modification type
+2. **RNA modification sites (m6A, Ψ, m5C, ac4C)**: Download from [RMBase v3.0](http://rna.sysu.edu.cn/rmbase/)
+   - Select Human (hg38) and each modification type
+   - Run `python scripts/process_rmbase_mods.py --setup-all` to extract BED files
+   - See `docs/DATA_DOWNLOAD.md` for full instructions
 
 ## Data Requirements
 
@@ -157,12 +154,15 @@ data/
 │   └── hg38.chrom.sizes            # Chromosome sizes
 └── mods/
     ├── K562/
-    │   ├── m6A.bed                 # From REPIC
-    │   ├── pseudoU.bed             # From RMBase
-    │   ├── m5C.bed
-    │   └── ac4C.bed
+    │   ├── m6A.bed                 # RMBase v3.0: cumulative multi-study (558,360 sites; no K562-specific data in RMBase)
+    │   ├── pseudoU.bed             # RMBase v3.0: cumulative multi-study (5,705 sites)
+    │   ├── m5C.bed                 # RMBase v3.0: cumulative multi-study (46,025 sites)
+    │   └── ac4C.bed                # RMBase v3.0: cumulative multi-study (1,861 sites)
     └── HepG2/
-        └── ...
+        ├── m6A.bed                 # RMBase v3.0: HepG2-specific (178,800 sites)
+        ├── pseudoU.bed             # RMBase v3.0: cumulative multi-study (5,705 sites)
+        ├── m5C.bed                 # RMBase v3.0: cumulative multi-study (46,025 sites)
+        └── ac4C.bed                # RMBase v3.0: cumulative multi-study (1,861 sites)
 ```
 
 ### Data Sources
@@ -171,8 +171,7 @@ data/
 |-----------|--------|-----|
 | RBNS Z-scores | ENCODE / Dominguez et al. | [ENCODE RBNS](https://www.encodeproject.org/rbns/) |
 | eCLIP peaks | ENCODE | [ENCODE eCLIP](https://www.encodeproject.org/eclip/) |
-| m6A sites | REPIC | [repicmod.uchicago.edu](https://repicmod.uchicago.edu/) |
-| Ψ, m5C, ac4C | RMBase v2.0 | [rna.sysu.edu.cn/rmbase](http://rna.sysu.edu.cn/rmbase/) |
+| m6A, Ψ, m5C, ac4C | RMBase v3.0 | [rna.sysu.edu.cn/rmbase](http://rna.sysu.edu.cn/rmbase/) |
 | Reference genome | UCSC | [hg38.fa](https://hgdownload.soe.ucsc.edu/goldenPath/hg38/bigZips/) |
 
 ### RBNS Z-scores Format
@@ -322,9 +321,7 @@ The pipeline includes positive control validation:
 
 - ENCODE eCLIP: [encodeproject.org/eclip](https://www.encodeproject.org/eclip/)
 
-- REPIC Database: [repicmod.uchicago.edu](https://repicmod.uchicago.edu/)
-
-- RMBase v2.0: [rna.sysu.edu.cn/rmbase](http://rna.sysu.edu.cn/rmbase/)
+- RMBase v3.0: [rna.sysu.edu.cn/rmbase](http://rna.sysu.edu.cn/rmbase/)
 
 ## License
 

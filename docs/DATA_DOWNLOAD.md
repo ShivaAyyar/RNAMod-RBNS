@@ -10,8 +10,7 @@ This document provides step-by-step instructions for downloading all required da
 | Chromosome Sizes | UCSC | Yes | No |
 | eCLIP Peaks | ENCODE | **Yes** | No |
 | RBNS R-values/Z-scores | ENCODE | **Yes** | No |
-| m6A Sites | REPIC | No | Yes |
-| Ψ, m5C, ac4C Sites | RMBase | No | Yes |
+| m6A, Ψ, m5C, ac4C Sites | RMBase v3.0 | No | Yes |
 
 ## The 15 Analyzable RBPs
 
@@ -245,17 +244,17 @@ python scripts/process_rmbase_mods.py --setup-all
 This script will:
 - Extract the tar.gz archives
 - Filter m6A for HepG2-specific sites (178,800 sites)
-- For K562: use all m6A sites with support ≥2 (558,360 sites) since K562 m6A is not profiled in RMBase
-- Use all Ψ, m5C, ac4C sites for both cell lines (not cell-line-specific in RMBase)
+- For K562: use all m6A sites with support ≥2 (558,360 cumulative multi-study sites) — K562-specific m6A data is not available in RMBase v3.0
+- Use all Ψ, m5C, and ac4C sites for both cell lines (cumulative multi-study; no cell-line-specific data exists in RMBase v3.0)
 
 ### Data Availability Summary
 
 | Modification | K562 Sites | HepG2 Sites | Notes |
 |--------------|------------|-------------|-------|
-| **m6A** | 558,360 | 178,800 | HepG2 cell-specific; K562 uses all sites |
-| **Ψ (Pseudo)** | 5,705 | 5,705 | Same sites (not cell-specific) |
-| **m5C** | 46,025 | 46,025 | Same sites (not cell-specific) |
-| **ac4C** | 1,861 | 1,861 | Same sites (not cell-specific) |
+| **m6A** | 558,360 | 178,800 | HepG2: cell-line-specific; K562: cumulative multi-study (support ≥2), K562-specific data absent from RMBase v3.0 |
+| **Ψ (Pseudo)** | 5,705 | 5,705 | Cumulative multi-study; no cell-line-specific data in RMBase v3.0 |
+| **m5C** | 46,025 | 46,025 | Cumulative multi-study; no cell-line-specific data in RMBase v3.0 |
+| **ac4C** | 1,861 | 1,861 | Cumulative multi-study; no cell-line-specific data in RMBase v3.0 |
 
 ### Output BED6 Format
 
@@ -361,5 +360,4 @@ CELL_LINE=HepG2 sbatch scripts/submit_job.sh
 
 - Dominguez D, et al. (2018). Sequence, Structure, and Context Preferences of Human RNA Binding Proteins. *Molecular Cell*, 70(5):854-867. [DOI: 10.1016/j.molcel.2018.06.012](https://doi.org/10.1016/j.molcel.2018.06.012)
 - ENCODE Project: https://www.encodeproject.org/
-- REPIC Database: https://repicmod.uchicago.edu/
-- RMBase v2.0: http://rna.sysu.edu.cn/rmbase/
+- RMBase v3.0: http://rna.sysu.edu.cn/rmbase/

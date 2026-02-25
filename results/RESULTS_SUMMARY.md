@@ -263,7 +263,7 @@ Extremely sequence-specific (98.6% canonical) - TDP-43 binding well-explained by
 **Note:** Current enrichment analysis shows no significant overlaps between peaks and modification sites. This may indicate:
 1. Coordinate system mismatch between peak BED files and modification BED files
 2. Need for window-based overlap rather than exact intersection
-3. Sparse modification coverage in K562 cell line data
+3. The K562 modification data is cumulative multi-study rather than K562-specific, which may reduce signal specificity
 
 Further investigation is needed to validate the enrichment analysis pipeline.
 
@@ -282,7 +282,7 @@ Further investigation is needed to validate the enrichment analysis pipeline.
 ### Data Sources
 - **eCLIP:** ENCODE Project (K562 cell line)
 - **RBNS:** ENCODE Project (5-mer enrichment data)
-- **Modifications:** RMBase v3.0 (m6A, pseudoU, m5C, ac4C)
+- **Modifications:** RMBase v3.0 — all four modification types use cumulative multi-study sites (hg38). m6A for HepG2 is cell-line-specific (178,800 sites); m6A for K562 is cumulative multi-study with support ≥2 (558,360 sites) as K562-specific m6A data is absent from RMBase v3.0. Ψ, m5C, and ac4C use the same cumulative multi-study sites for both cell lines.
 
 ---
 

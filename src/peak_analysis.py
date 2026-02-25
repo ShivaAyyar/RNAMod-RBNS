@@ -15,6 +15,7 @@ References:
 - RBNS_pipeline: https://github.com/cburgelab/RBNS_pipeline
 """
 
+import re
 import pandas as pd
 import pybedtools
 import logging
@@ -323,9 +324,17 @@ def scored_df_to_bed(
             coords = peak_id
             strand = '.'
 
-        # Use rsplit to handle chromosome names with colons (e.g., chrUn_gl000220)
-        # Split from the right to get the last colon which separates chrom from positions
-        chrom, positions = coords.rsplit(':', 1)
+        # Extract chromosome and positions using regex.
+        # peak_id from bedtools getfasta --name has the form:
+        #   "NAME::chrN:start-end"  e.g. "HNRNPC_K562_IDR::chr9:120760581-120760695"
+        # A naive rsplit(':', 1) would yield chrom="NAME::chrN", not "chrN".
+        match = re.search(r'(chr[^:]+):(\d+-\d+)$', coords)
+        if match:
+            chrom = match.group(1)
+            positions = match.group(2)
+        else:
+            # Fallback for plain "chrN:start-end" peak_ids
+            chrom, positions = coords.rsplit(':', 1)
         start, end = positions.split('-')
 
         # BED format: chrom, start, end, name, score, strand
