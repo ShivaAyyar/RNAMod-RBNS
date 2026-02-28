@@ -1,0 +1,5 @@
+modification,canonical_overlap,canonical_total,canonical_pct,discrepant_overlap,discrepant_total,discrepant_pct,odds_ratio,pvalue,pvalue_adj,significant,rbp,cell_line
+m6A,261,3881,6.725070858026282,3,19,15.789473684210526,2.6005747126436782,0.13333017710655326,0.533320708426213,False,FUS,K562
+pseudoU,4,3881,0.1030662200463798,0,19,0.0,0.0,1.0,1.0,False,FUS,K562
+m5C,19,3881,0.489564545220304,0,19,0.0,0.0,1.0,1.0,False,FUS,K562
+ac4C,4,3881,0.1030662200463798,0,19,0.0,0.0,1.0,1.0,False,FUS,K562

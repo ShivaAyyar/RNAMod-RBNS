@@ -1,2 +1,2 @@
 rbp,cell_line,timestamp,n_kmers,n_peaks_initial,n_peaks_filtered,n_canonical,n_discrepant,n_intermediate,n_significant
-LIN28B,K562,2026-02-25T18:46:10.926720,1024,6916,6916,3733,947,2236,0
+LIN28B,K562,2026-02-27T21:05:01.031328,1024,6916,6916,2424,2245,2247,0

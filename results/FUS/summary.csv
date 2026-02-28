@@ -1,2 +1,2 @@
 rbp,cell_line,timestamp,n_kmers,n_peaks_initial,n_peaks_filtered,n_canonical,n_discrepant,n_intermediate,n_significant
-FUS,K562,2026-02-25T18:46:52.806642,1024,4473,4473,0,12,4461,0
+FUS,K562,2026-02-27T21:04:35.713485,1024,4473,4473,3881,19,573,0
