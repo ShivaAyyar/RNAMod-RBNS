@@ -336,8 +336,37 @@ def run_gat_analysis(
     out_tsv = os.path.join(work_dir, 'gat_results.tsv')
     gat_log = os.path.join(work_dir, 'gat.log')
 
-    # GAT expects a single annotations BED where the 4th column is the
-    # track/annotation name. Concatenate all mod beds with their names.
+    # GAT's BED parser is strict: it expects exactly 3 or 4 columns and
+    # chokes on float scores, long names, or a trailing strand '-' character
+    # (which it misreads as an incomplete negative number). Write clean
+    # 3-column BEDs for segments and workspace, and 4-column for annotations.
+
+    def _write_3col_bed(src_bed: str, fh) -> None:
+        """Write chrom/start/end only — strip all extra columns."""
+        with open(src_bed) as f:
+            for line in f:
+                line = line.rstrip()
+                if not line or line.startswith('#'):
+                    continue
+                fields = line.split('\t')
+                fh.write(f"{fields[0]}\t{fields[1]}\t{fields[2]}\n")
+
+    # Segments: 3-column clean BED
+    seg_fh = tempfile.NamedTemporaryFile(
+        mode='w', suffix='.bed', delete=False)
+    seg_path = seg_fh.name
+    _write_3col_bed(segments_bed, seg_fh)
+    seg_fh.close()
+
+    # Workspace: 3-column clean BED
+    ws_fh = tempfile.NamedTemporaryFile(
+        mode='w', suffix='.bed', delete=False)
+    ws_path = ws_fh.name
+    _write_3col_bed(workspace_bed, ws_fh)
+    ws_fh.close()
+
+    # Annotations: 4-column BED (chrom, start, end, mod_name).
+    # Concatenate all mod beds, replacing col 4 with the mod name.
     ann_fh = tempfile.NamedTemporaryFile(
         mode='w', suffix='.bed', delete=False)
     try:
@@ -346,33 +375,34 @@ def run_gat_analysis(
             with open(mod_bed) as f:
                 for line in f:
                     line = line.rstrip()
-                    if not line:
+                    if not line or line.startswith('#'):
                         continue
                     fields = line.split('\t')
-                    # Ensure at least 4 columns; set col 4 to mod_name
-                    while len(fields) < 4:
-                        fields.append('.')
-                    fields[3] = mod_name
-                    ann_fh.write('\t'.join(fields[:4]) + '\n')
+                    ann_fh.write(
+                        f"{fields[0]}\t{fields[1]}\t{fields[2]}\t{mod_name}\n")
         ann_fh.close()
 
+        # GAT writes results to stdout (single counter = nucleotide-overlap).
+        # Capture stdout directly; stderr goes to the log file.
         cmd = [
             'gat-run.py',
-            '--segments', segments_bed,
+            '--segments', seg_path,
             '--annotations', ann_path,
-            '--workspace', workspace_bed,
+            '--workspace', ws_path,
             '--num-samples', str(n_samples),
-            '--output-filename-pattern', out_tsv,
-            '--log', gat_log,
         ]
 
         logger.info(f"Running GAT with {n_samples} permutations...")
         logger.debug(f"GAT command: {' '.join(cmd)}")
 
-        result = subprocess.run(
-            cmd, capture_output=True, text=True, check=True)
-        if result.stdout:
-            logger.debug(result.stdout)
+        with open(gat_log, 'w') as log_fh:
+            result = subprocess.run(
+                cmd, stdout=subprocess.PIPE, stderr=log_fh,
+                check=True, text=True)
+
+        # Write captured stdout (TSV) to file and parse
+        with open(out_tsv, 'w') as f:
+            f.write(result.stdout)
 
         # Parse GAT output table
         df = pd.read_csv(out_tsv, sep='\t')
@@ -389,10 +419,14 @@ def run_gat_analysis(
         return df
 
     except subprocess.CalledProcessError as e:
-        logger.error(f"GAT failed: {e.stderr}")
+        logger.error(f"GAT failed (exit {e.returncode}). See {gat_log} for details.")
         raise
     finally:
-        os.unlink(ann_path)
+        for tmp in (ann_path, seg_path, ws_path):
+            try:
+                os.unlink(tmp)
+            except OSError:
+                pass
 
 
 def aggregate_rbp_results(
