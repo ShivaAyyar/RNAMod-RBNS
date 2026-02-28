@@ -400,11 +400,24 @@ def run_gat_analysis(
                 cmd, stdout=subprocess.PIPE, stderr=log_fh,
                 check=True, text=True)
 
-        # Write captured stdout (TSV) to file and parse
-        with open(out_tsv, 'w') as f:
-            f.write(result.stdout)
+        # GAT stdout mixes progress log lines with the TSV results table.
+        # The results table starts at the line beginning with "track\t".
+        # Extract only that portion before writing/parsing.
+        lines = result.stdout.splitlines()
+        tsv_start = next(
+            (i for i, l in enumerate(lines) if l.startswith('track\t')),
+            None
+        )
+        if tsv_start is None:
+            raise ValueError(
+                "Could not find TSV header in GAT output. "
+                f"See {gat_log} for details.")
+        tsv_content = '\n'.join(lines[tsv_start:])
 
-        # Parse GAT output table
+        with open(out_tsv, 'w') as f:
+            f.write(tsv_content)
+
+        # Parse GAT output table (24 columns confirmed from source)
         df = pd.read_csv(out_tsv, sep='\t')
 
         # GAT output columns include: track, annotation, observed,
