@@ -104,6 +104,14 @@ RBPS=(
 # Get current RBP from array index
 RBP="${RBPS[$SLURM_ARRAY_TASK_ID]}"
 
+# Per-RBP cell-line overrides for RBPs without K562 eCLIP data
+# PCBP2 has no K562 eCLIP (HepG2 only per ENCODE)
+case "${RBP}" in
+    "PCBP2")
+        CELL_LINE="HepG2"
+        ;;
+esac
+
 # Per-RBP threshold overrides for compressed RBNS Z-score distributions
 # IGF2BP1 and FUS have flatter RBNS landscapes (fewer k-mers, lower max Z),
 # so the default Z>=3.0 canonical threshold yields zero canonical peaks.
