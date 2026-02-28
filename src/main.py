@@ -259,7 +259,11 @@ def run_analysis(args) -> dict:
             discrepant_bed,
             args.mods,
             args.mod_names,
-            chrom_sizes=args.chrom_sizes
+            chrom_sizes=args.chrom_sizes,
+            run_gat=args.run_gat,
+            workspace_bed=filtered_bed,
+            gat_n_samples=args.gat_n_samples,
+            output_dir=str(outdir)
         )
 
         # Add metadata
@@ -410,6 +414,14 @@ Gold Standard RBPs (24 total):
     parser.add_argument(
         '--extension', type=int, default=50,
         help="5' extension for peaks in nucleotides (default: 50)"
+    )
+    parser.add_argument(
+        '--run-gat', action='store_true',
+        help='Run GAT permutation analysis in addition to Fisher test'
+    )
+    parser.add_argument(
+        '--gat-n-samples', type=int, default=10000,
+        help='Number of GAT permutations (default: 10000)'
     )
 
     args = parser.parse_args()

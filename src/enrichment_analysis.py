@@ -16,6 +16,10 @@ References:
 - RMBase v2.0: http://rna.sysu.edu.cn/rmbase/
 """
 
+import os
+import subprocess
+import tempfile
+
 import pandas as pd
 import pybedtools
 import logging
@@ -148,7 +152,11 @@ def run_enrichment_analysis(
     apply_fdr: bool = True,
     fdr_method: str = 'fdr_bh',
     window: int = 0,
-    chrom_sizes: Optional[str] = None
+    chrom_sizes: Optional[str] = None,
+    run_gat: bool = False,
+    workspace_bed: Optional[str] = None,
+    gat_n_samples: int = 10000,
+    output_dir: Optional[str] = None
 ) -> pd.DataFrame:
     """
     Run enrichment analysis for all modification types.
@@ -257,7 +265,134 @@ def run_enrichment_analysis(
             result['pvalue_adj'] = pvals_adj[i]
             result['significant'] = reject[i]
 
-    return pd.DataFrame(results)
+    fisher_df = pd.DataFrame(results)
+
+    # Optionally run GAT on discrepant peaks as a background-controlled
+    # complement to the Fisher test. Results are saved to gat_results.csv
+    # but do not affect the returned Fisher DataFrame.
+    if run_gat and workspace_bed:
+        try:
+            gat_df = run_gat_analysis(
+                discrepant_bed, mod_beds, mod_names,
+                workspace_bed, chrom_sizes,
+                n_samples=gat_n_samples,
+                output_dir=output_dir
+            )
+            if output_dir:
+                gat_df.to_csv(
+                    Path(output_dir) / 'gat_results.csv', index=False)
+                logger.info("GAT results saved to gat_results.csv")
+        except Exception as e:
+            logger.error(f"GAT analysis failed (Fisher results unaffected): {e}")
+
+    return fisher_df
+
+
+def run_gat_analysis(
+    segments_bed: str,
+    mod_beds: List[str],
+    mod_names: List[str],
+    workspace_bed: str,
+    chrom_sizes: str,
+    n_samples: int = 10000,
+    output_dir: Optional[str] = None
+) -> pd.DataFrame:
+    """
+    Run GAT (Genomic Association Tester) for modification enrichment.
+
+    Tests whether peaks overlap modification sites more than expected
+    by chance, controlling for genomic region biases by randomly
+    relocating peaks within the workspace (filtered eCLIP peaks).
+
+    GAT is invoked as a subprocess (gat-run.py must be in PATH).
+
+    Parameters
+    ----------
+    segments_bed : str
+        Path to peaks BED file to test (discrepant peaks)
+    mod_beds : list
+        Paths to modification BED files (used as annotations)
+    mod_names : list
+        Names of modifications (same order as mod_beds)
+    workspace_bed : str
+        BED file defining regions within which peaks are shuffled.
+        Should be peaks_filtered.bed (all eCLIP peaks for the RBP)
+        to constrain shuffling to the transcriptomic regions where
+        this protein actually binds.
+    chrom_sizes : str
+        Path to chromosome sizes file
+    n_samples : int
+        Number of random shuffles for null distribution (default: 10000)
+    output_dir : str, optional
+        Directory for GAT output files (tsv and log)
+
+    Returns
+    -------
+    pd.DataFrame
+        GAT results with columns: modification, observed, expected,
+        fold, pvalue, qvalue
+    """
+    work_dir = output_dir or tempfile.gettempdir()
+    out_tsv = os.path.join(work_dir, 'gat_results.tsv')
+    gat_log = os.path.join(work_dir, 'gat.log')
+
+    # GAT expects a single annotations BED where the 4th column is the
+    # track/annotation name. Concatenate all mod beds with their names.
+    ann_fh = tempfile.NamedTemporaryFile(
+        mode='w', suffix='.bed', delete=False)
+    try:
+        ann_path = ann_fh.name
+        for mod_bed, mod_name in zip(mod_beds, mod_names):
+            with open(mod_bed) as f:
+                for line in f:
+                    line = line.rstrip()
+                    if not line:
+                        continue
+                    fields = line.split('\t')
+                    # Ensure at least 4 columns; set col 4 to mod_name
+                    while len(fields) < 4:
+                        fields.append('.')
+                    fields[3] = mod_name
+                    ann_fh.write('\t'.join(fields[:4]) + '\n')
+        ann_fh.close()
+
+        cmd = [
+            'gat-run.py',
+            '--segments', segments_bed,
+            '--annotations', ann_path,
+            '--workspace', workspace_bed,
+            '--num-samples', str(n_samples),
+            '--output-filename-pattern', out_tsv,
+            '--log', gat_log,
+        ]
+
+        logger.info(f"Running GAT with {n_samples} permutations...")
+        logger.debug(f"GAT command: {' '.join(cmd)}")
+
+        result = subprocess.run(
+            cmd, capture_output=True, text=True, check=True)
+        if result.stdout:
+            logger.debug(result.stdout)
+
+        # Parse GAT output table
+        df = pd.read_csv(out_tsv, sep='\t')
+
+        # GAT output columns include: track, annotation, observed,
+        # expected, CI95low, CI95high, stddev, fold, pvalue, qvalue, ...
+        # 'annotation' is the mod name we embedded in col 4.
+        keep = ['annotation', 'observed', 'expected', 'fold',
+                'pvalue', 'qvalue']
+        df = df[[c for c in keep if c in df.columns]].copy()
+        df = df.rename(columns={'annotation': 'modification'})
+
+        logger.info(f"GAT complete. Results for {len(df)} modifications.")
+        return df
+
+    except subprocess.CalledProcessError as e:
+        logger.error(f"GAT failed: {e.stderr}")
+        raise
+    finally:
+        os.unlink(ann_path)
 
 
 def aggregate_rbp_results(

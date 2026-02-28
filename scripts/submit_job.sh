@@ -242,6 +242,11 @@ echo ""
 
 cd "${SRC_DIR}"
 
+# GAT permutation testing (set to "--run-gat" to enable, "" to skip)
+# At 10,000 shuffles, GAT adds ~5-15 minutes per RBP.
+# Results are written to ${OUTPUT_DIR}/gat_results.csv
+GAT_FLAG="--run-gat"
+
 python main.py \
     --rbp "${RBP}" \
     --rbns "${RBNS_FILE}" \
@@ -253,7 +258,8 @@ python main.py \
     --output "${OUTPUT_DIR}" \
     --cell-line "${CELL_LINE}" \
     --canonical-threshold "${CANONICAL_THRESHOLD}" \
-    --discrepant-threshold "${DISCREPANT_THRESHOLD}"
+    --discrepant-threshold "${DISCREPANT_THRESHOLD}" \
+    ${GAT_FLAG}
 
 # ==========================
 # Summary
