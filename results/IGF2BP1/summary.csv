@@ -1,2 +1,2 @@
 rbp,cell_line,timestamp,n_kmers,n_peaks_initial,n_peaks_filtered,n_canonical,n_discrepant,n_intermediate,n_significant
-IGF2BP1,K562,2026-02-27T21:04:40.782914,970,5706,5706,3724,104,1878,0
+IGF2BP1,K562,2026-02-28T18:00:24.000584,970,5706,5706,3724,104,1878,0

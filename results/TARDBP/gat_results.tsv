@@ -1,0 +1,6 @@
+track	annotation	observed	expected	CI95low	CI95high	stddev	fold	l2fold	pvalue	qvalue	track_nsegments	track_size	track_density	annotation_nsegments	annotation_size	annotation_density	overlap_nsegments	overlap_size	overlap_density	percent_overlap_nsegments_track	percent_overlap_size_track	percent_overlap_nsegments_annotation	percent_overlap_size_annotation
+merged	pseudoU	0	0.0431	0.0000	0.0000	0.2050	0.9587	-0.0609	9.5730e-01	1.0000e+00	155	7757	2.2894e+00	2	2	5.9028e-04	0	0	0.0000e+00	0.0000	0.0000	0.0000	0.0000
+merged	ac4C	0	0.0000	0.0000	0.0000	0.0000	1.0000	0.0000	1.0000e+00	1.0000e+00	155	7757	2.2894e+00	0	0	0.0000e+00	0	0	0.0000e+00	0.0000	0.0000	na	na
+merged	m5C	1	0.4439	0.0000	2.0000	1.1861	1.3851	0.4700	2.8100e-01	5.6200e-01	155	7757	2.2894e+00	27	27	7.9688e-03	1	1	2.9514e-04	0.6452	0.0129	3.7037	3.7037
+merged	m6A	12	7.1858	3.0000	12.0000	2.9944	1.5881	0.6673	8.5000e-02	3.4000e-01	155	7757	2.2894e+00	314	314	9.2674e-02	12	12	3.5417e-03	7.7419	0.1547	3.8217	3.8217
+# job finished in 47 seconds at Sat Feb 28 18:01:20 2026 -- 48.85  0.60  0.00  0.00 -- 444b946e-561a-4f11-b2c9-18109fe500fd
