@@ -258,7 +258,8 @@ def run_analysis(args) -> dict:
             canonical_bed,
             discrepant_bed,
             args.mods,
-            args.mod_names
+            args.mod_names,
+            chrom_sizes=args.chrom_sizes
         )
 
         # Add metadata

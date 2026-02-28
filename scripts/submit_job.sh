@@ -104,6 +104,20 @@ RBPS=(
 # Get current RBP from array index
 RBP="${RBPS[$SLURM_ARRAY_TASK_ID]}"
 
+# Per-RBP threshold overrides for compressed RBNS Z-score distributions
+# IGF2BP1 and FUS have flatter RBNS landscapes (fewer k-mers, lower max Z),
+# so the default Z>=3.0 canonical threshold yields zero canonical peaks.
+case "${RBP}" in
+    "IGF2BP1"|"FUS")
+        CANONICAL_THRESHOLD="2.0"
+        DISCREPANT_THRESHOLD="1.0"
+        ;;
+    *)
+        CANONICAL_THRESHOLD="3.0"
+        DISCREPANT_THRESHOLD="1.5"
+        ;;
+esac
+
 # ==========================
 # Setup Environment
 # ==========================
@@ -229,7 +243,9 @@ python main.py \
     --mods "${M6A_FILE}" "${PSEUDOU_FILE}" "${M5C_FILE}" "${AC4C_FILE}" \
     --mod-names m6A pseudoU m5C ac4C \
     --output "${OUTPUT_DIR}" \
-    --cell-line "${CELL_LINE}"
+    --cell-line "${CELL_LINE}" \
+    --canonical-threshold "${CANONICAL_THRESHOLD}" \
+    --discrepant-threshold "${DISCREPANT_THRESHOLD}"
 
 # ==========================
 # Summary

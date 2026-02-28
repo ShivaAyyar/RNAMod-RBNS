@@ -31,7 +31,9 @@ logger = logging.getLogger(__name__)
 def count_modification_overlaps(
     peaks_bed: str,
     mod_bed: str,
-    min_overlap: int = 1
+    min_overlap: int = 1,
+    window: int = 0,
+    chrom_sizes: Optional[str] = None
 ) -> Tuple[int, int]:
     """
     Count peaks overlapping modification sites.
@@ -46,6 +48,13 @@ def count_modification_overlaps(
         Path to modification sites BED file
     min_overlap : int
         Minimum overlap in bp (default: 1)
+    window : int
+        Extend peaks by this many bp on each side before intersection.
+        0 = exact intersection (default). Useful for single-nucleotide
+        modification sites (e.g. RMBase) where exact overlap may miss
+        sites at peak edges.
+    chrom_sizes : str, optional
+        Path to chromosome sizes file (required when window > 0)
 
     Returns
     -------
@@ -56,6 +65,10 @@ def count_modification_overlaps(
     mods = pybedtools.BedTool(mod_bed)
 
     total = len(peaks)
+
+    if window > 0 and chrom_sizes:
+        peaks = peaks.slop(b=window, g=chrom_sizes)
+
     overlapping = len(peaks.intersect(mods, u=True))
 
     logger.debug(f"Overlap: {overlapping}/{total} peaks with {mod_bed}")
@@ -133,7 +146,9 @@ def run_enrichment_analysis(
     mod_beds: List[str],
     mod_names: List[str],
     apply_fdr: bool = True,
-    fdr_method: str = 'fdr_bh'
+    fdr_method: str = 'fdr_bh',
+    window: int = 0,
+    chrom_sizes: Optional[str] = None
 ) -> pd.DataFrame:
     """
     Run enrichment analysis for all modification types.
@@ -194,8 +209,10 @@ def run_enrichment_analysis(
     for mod_bed, mod_name in zip(mod_beds, mod_names):
         logger.info(f"Processing {mod_name}...")
 
-        canon_overlap, _ = count_modification_overlaps(canonical_bed, mod_bed)
-        disc_overlap, _ = count_modification_overlaps(discrepant_bed, mod_bed)
+        canon_overlap, _ = count_modification_overlaps(
+            canonical_bed, mod_bed, window=window, chrom_sizes=chrom_sizes)
+        disc_overlap, _ = count_modification_overlaps(
+            discrepant_bed, mod_bed, window=window, chrom_sizes=chrom_sizes)
 
         odds_ratio, pvalue = fisher_enrichment_test(
             disc_overlap, disc_total,

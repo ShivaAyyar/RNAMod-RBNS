@@ -90,10 +90,14 @@ def extend_peaks_5prime(
     extension: int = PEAK_EXTENSION
 ) -> pybedtools.BedTool:
     """
-    Extend peaks in 5' direction per Dominguez methodology.
+    Extend peaks 5' from crosslink summit per Dominguez et al.
 
-    The 5' start of eCLIP peaks corresponds to the UV crosslink site.
-    Extending 50nt in the 5' direction captures the relevant binding context.
+    eCLIP narrowPeak column 10 = summit offset from peak start.
+    Actual crosslink site = start + summit_offset.
+    Extends `extension` nt upstream (5') of the crosslink.
+
+    For + strand: new window = [crosslink - extension, crosslink]
+    For - strand: new window = [crosslink, crosslink + extension]
 
     Parameters
     ----------
@@ -107,22 +111,48 @@ def extend_peaks_5prime(
     Returns
     -------
     pybedtools.BedTool
-        Extended peaks (handles chromosome boundaries automatically)
-
-    Notes
-    -----
-    Uses bedtools slop with:
-    - l=extension (left/5' extension)
-    - r=0 (no 3' extension)
-    - s=True (strand-aware: 5' depends on strand)
-    - g=chrom_sizes (genome file for boundary handling)
+        Summit-extended peaks
     """
-    logger.info(f"Extending peaks {extension}nt in 5' direction")
+    logger.info(f"Extending peaks {extension}nt 5' from crosslink summit")
 
+    chrom_size_dict = {}
+    with open(chrom_sizes) as f:
+        for line in f:
+            parts = line.strip().split('\t')
+            chrom_size_dict[parts[0]] = int(parts[1])
+
+    bed_lines = []
     peaks = pybedtools.BedTool(peaks_bed)
-    extended = peaks.slop(l=extension, r=0, s=True, g=chrom_sizes)
+    for feature in peaks:
+        chrom = feature.chrom
+        start = int(feature.start)
+        end = int(feature.end)
+        strand = feature.strand if feature.strand in ('+', '-') else '+'
 
-    logger.info(f"Extended {len(peaks)} peaks")
+        # narrowPeak col 10 (0-indexed field[9]); fall back to midpoint
+        try:
+            summit_offset = int(feature.fields[9])
+        except (IndexError, ValueError):
+            summit_offset = (end - start) // 2
+
+        crosslink = start + summit_offset
+        chrom_len = chrom_size_dict.get(chrom, end)
+
+        if strand == '-':
+            new_start = crosslink
+            new_end = min(crosslink + extension, chrom_len)
+        else:
+            new_start = max(0, crosslink - extension)
+            new_end = crosslink
+
+        # Preserve all original fields, replacing start/end
+        fields = list(feature.fields)
+        fields[1] = str(new_start)
+        fields[2] = str(new_end)
+        bed_lines.append('\t'.join(fields))
+
+    extended = pybedtools.BedTool('\n'.join(bed_lines), from_string=True)
+    logger.info(f"Summit-extended {len(bed_lines)} peaks")
     return extended
 
 
