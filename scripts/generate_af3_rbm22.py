@@ -13,7 +13,7 @@ Strategy:
   3. For each selected peak, locate the pseudoU site within the peak sequence and
      extract a 30 nt window centred on it. If a peak has no pseudoU overlap it is
      used unmodified-only (single job, not a pair).
-  4. Fetch the full-length RBM22 protein sequence from UniProt (P45957).
+  4. Load the full-length RBM22 protein sequence from data/proteins/RBM22.fasta.
   5. Write two JSON files per peak: one with pseudoU (modificationType = "PSU"),
      one without any modification.
   6. Write a manifest CSV and run basic validation.
@@ -43,42 +43,36 @@ from typing import Dict, List, Optional, Tuple
 
 import pandas as pd
 import pybedtools
-import urllib.error
-import urllib.request
 
 
 # ---------------------------------------------------------------------------
 # Constants
 # ---------------------------------------------------------------------------
 
-UNIPROT_ID = "P45957"          # RBM22, Homo sapiens
-MOD_CCD    = "PSU"             # CCD code for pseudouridine
-HALF_WIN   = 15                # nucleotides on each side → 31 nt total centred on Ψ
+MOD_CCD  = "PSU"   # CCD code for pseudouridine
+HALF_WIN = 15      # nucleotides on each side → 31 nt total centred on Ψ
 
 
 # ---------------------------------------------------------------------------
-# Step 1: Fetch RBM22 protein sequence from UniProt
+# Step 1: Load RBM22 protein sequence from local FASTA
 # ---------------------------------------------------------------------------
 
-def fetch_uniprot_sequence(uniprot_id: str) -> Tuple[str, str]:
+def load_fasta_sequence(fasta_path: Path) -> Tuple[str, str]:
     """
-    Return (protein_name, sequence) for a UniProt accession.
-    Raises RuntimeError on network/parsing failure.
+    Parse a single-entry FASTA file and return (name, sequence).
+    Raises FileNotFoundError / RuntimeError on missing or malformed input.
     """
-    url = f"https://rest.uniprot.org/uniprotkb/{uniprot_id}.fasta"
-    print(f"Fetching {uniprot_id} from UniProt...")
-    try:
-        with urllib.request.urlopen(url, timeout=30) as resp:
-            text = resp.read().decode("utf-8")
-    except urllib.error.HTTPError as e:
-        raise RuntimeError(f"UniProt fetch failed (HTTP {e.code}) for {uniprot_id}")
-    lines = text.strip().split("\n")
-    header = lines[0]                       # >sp|P45957|RBM22_HUMAN ...
+    if not fasta_path.exists():
+        raise FileNotFoundError(f"Protein FASTA not found: {fasta_path}")
+    text = fasta_path.read_text(encoding="utf-8")
+    lines = [l.strip() for l in text.splitlines() if l.strip()]
+    if not lines or not lines[0].startswith(">"):
+        raise RuntimeError(f"Invalid FASTA format in {fasta_path}")
+    header   = lines[0]                        # >sp|Q9NW64|RBM22_HUMAN ...
     sequence = "".join(lines[1:])
-    # Extract name from header
-    match = re.search(r"\|[A-Z0-9]+\|(\S+)", header)
-    name = match.group(1) if match else uniprot_id
-    print(f"  {name}: {len(sequence)} aa")
+    match    = re.search(r"\|[A-Z0-9]+\|(\S+)", header)
+    name     = match.group(1) if match else fasta_path.stem
+    print(f"Loaded protein from {fasta_path.name}: {name} ({len(sequence)} aa)")
     return name, sequence
 
 
@@ -366,6 +360,10 @@ def main():
         "--mods-dir", default="data/mods/K562",
         help="Modification BED directory (default: data/mods/K562)"
     )
+    parser.add_argument(
+        "--protein-fasta", default="data/proteins/RBM22.fasta",
+        help="Path to RBM22 protein FASTA (default: data/proteins/RBM22.fasta)"
+    )
     args = parser.parse_args()
 
     results_dir  = Path(args.results_dir)
@@ -377,9 +375,9 @@ def main():
     output_dir.mkdir(parents=True, exist_ok=True)
 
     # ------------------------------------------------------------------
-    # 1. Fetch RBM22 protein sequence
+    # 1. Load RBM22 protein sequence from local FASTA
     # ------------------------------------------------------------------
-    protein_name, protein_seq = fetch_uniprot_sequence(UNIPROT_ID)
+    protein_name, protein_seq = load_fasta_sequence(Path(args.protein_fasta))
 
     # ------------------------------------------------------------------
     # 2. Load and select discrepant peaks
@@ -469,7 +467,7 @@ def main():
             "rna_length":       len(rna_seq),
             "pseudou_rna_pos":  psu_pos,
             "base_at_site":     base,
-            "protein_id":       UNIPROT_ID,
+            "protein_id":       protein_name,
             "protein_length":   len(protein_seq),
             "json_unmodified":  path_unmod.name,
             "json_modified":    path_mod.name if path_mod else "",
