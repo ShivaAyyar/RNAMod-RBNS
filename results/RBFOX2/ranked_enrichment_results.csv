@@ -1,0 +1,5 @@
+modification,n_total_peaks,n_mod_positive,n_mod_negative,pct_mod_positive,median_z_mod_pos,median_z_mod_neg,median_z_diff,direction,mann_whitney_u,mann_whitney_p,spearman_rho,spearman_p,z_bin_frequencies,mann_whitney_p_adj,significant,rbp,cell_line
+m6A,3525,263,3262,7.461,2.0271,2.3765,-0.3494,enriched_at_low_Z,347421.5,2.679244441005094e-07,-0.0867,2.5587159098089753e-07,"{""Q1"": 11.06, ""Q2"": 8.41, ""Q3"": 6.48, ""Q4"": 7.25, ""Q5"": 3.93}",1.0716977764020377e-06,True,RBFOX2,K562
+pseudoU,3525,2,3523,0.057,2.9436,2.3765,0.5671,enriched_at_high_Z,,,,,"{""Q1"": 0.0, ""Q2"": 0.14, ""Q3"": 0.0, ""Q4"": 0.14, ""Q5"": 0.0}",1.0,False,RBFOX2,K562
+m5C,3525,24,3501,0.681,1.6194,2.3765,-0.7571,enriched_at_low_Z,29489.5,0.01157572333921309,-0.0425,0.011552481912984214,"{""Q1"": 1.42, ""Q2"": 1.09, ""Q3"": 0.15, ""Q4"": 0.28, ""Q5"": 0.44}",0.02315144667842618,True,RBFOX2,K562
+ac4C,3525,1,3524,0.028,3.1645,2.3765,0.788,enriched_at_high_Z,,,,,"{""Q1"": 0.0, ""Q2"": 0.0, ""Q3"": 0.0, ""Q4"": 0.14, ""Q5"": 0.0}",1.0,False,RBFOX2,K562

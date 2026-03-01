@@ -1,2 +1,2 @@
-rbp,cell_line,timestamp,n_kmers,n_peaks_initial,n_peaks_filtered,n_canonical,n_discrepant,n_intermediate,n_significant
-FUS,K562,2026-02-28T18:00:28.016910,1024,4473,4473,3881,19,573,0
+rbp,cell_line,timestamp,n_kmers,n_peaks_initial,n_peaks_filtered,n_canonical,n_discrepant,n_intermediate,n_significant,n_significant_ranked,top_mod_ranked,top_mod_direction
+FUS,K562,2026-02-28T21:46:26.234622,1024,4473,4473,3881,19,573,0,1,m6A,enriched_at_low_Z

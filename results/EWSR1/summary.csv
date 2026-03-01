@@ -1,2 +1,2 @@
-rbp,cell_line,timestamp,n_kmers,n_peaks_initial,n_peaks_filtered,n_canonical,n_discrepant,n_intermediate,n_significant
-EWSR1,K562,2026-02-28T18:00:33.804272,1024,8803,8803,5387,105,3311,0
+rbp,cell_line,timestamp,n_kmers,n_peaks_initial,n_peaks_filtered,n_canonical,n_discrepant,n_intermediate,n_significant,n_significant_ranked
+EWSR1,K562,2026-02-28T21:46:26.246687,1024,8803,8803,5387,105,3311,0,0

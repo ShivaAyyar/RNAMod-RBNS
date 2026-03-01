@@ -1,2 +1,2 @@
-rbp,cell_line,timestamp,n_kmers,n_peaks_initial,n_peaks_filtered,n_canonical,n_discrepant,n_intermediate,n_significant
-RBM22,K562,2026-02-28T18:00:21.312359,1024,991,991,271,592,128,1
+rbp,cell_line,timestamp,n_kmers,n_peaks_initial,n_peaks_filtered,n_canonical,n_discrepant,n_intermediate,n_significant,n_significant_ranked,top_mod_ranked,top_mod_direction
+RBM22,K562,2026-02-28T21:46:35.605833,1024,991,991,271,592,128,1,2,pseudoU,enriched_at_low_Z

@@ -1,0 +1,5 @@
+modification,n_total_peaks,n_mod_positive,n_mod_negative,pct_mod_positive,median_z_mod_pos,median_z_mod_neg,median_z_diff,direction,mann_whitney_u,mann_whitney_p,spearman_rho,spearman_p,z_bin_frequencies,mann_whitney_p_adj,significant,rbp,cell_line
+m6A,516,32,484,6.202,25.7769,25.7769,0.0,no_difference,6727.0,0.13865208851416955,-0.0653,0.13861215662174747,{},0.5546083540566782,False,HNRNPC,K562
+pseudoU,516,1,515,0.194,5.4001,25.7769,-20.3768,enriched_at_low_Z,,,,,{},1.0,False,HNRNPC,K562
+m5C,516,8,508,1.55,25.7769,25.7769,0.0,no_difference,2018.0,0.9693743327697564,-0.0018,0.9682868662567625,{},1.0,False,HNRNPC,K562
+ac4C,516,2,514,0.388,2.1326,25.7769,-23.6443,enriched_at_low_Z,,,,,{},1.0,False,HNRNPC,K562

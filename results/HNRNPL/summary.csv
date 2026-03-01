@@ -1,2 +1,2 @@
-rbp,cell_line,timestamp,n_kmers,n_peaks_initial,n_peaks_filtered,n_canonical,n_discrepant,n_intermediate,n_significant
-HNRNPL,K562,2026-02-28T18:00:21.657399,1024,5929,5929,3958,371,1600,0
+rbp,cell_line,timestamp,n_kmers,n_peaks_initial,n_peaks_filtered,n_canonical,n_discrepant,n_intermediate,n_significant,n_significant_ranked,top_mod_ranked,top_mod_direction
+HNRNPL,K562,2026-02-28T21:46:39.094064,1024,5929,5929,3958,371,1600,0,1,m6A,enriched_at_high_Z

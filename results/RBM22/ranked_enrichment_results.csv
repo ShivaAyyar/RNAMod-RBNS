@@ -1,0 +1,5 @@
+modification,n_total_peaks,n_mod_positive,n_mod_negative,pct_mod_positive,median_z_mod_pos,median_z_mod_neg,median_z_diff,direction,mann_whitney_u,mann_whitney_p,spearman_rho,spearman_p,z_bin_frequencies,mann_whitney_p_adj,significant,rbp,cell_line
+m6A,991,148,843,14.934,1.2035,1.4433,-0.2398,enriched_at_low_Z,55026.0,0.02194503129299936,-0.0728,0.021860537698992745,"{""Q1"": 17.41, ""Q2"": 19.8, ""Q3"": 13.43, ""Q4"": 11.56, ""Q5"": 12.44}",0.04389006258599872,True,RBM22,K562
+pseudoU,991,22,969,2.22,0.9436,1.4433,-0.4997,enriched_at_low_Z,7054.0,0.00660012649954439,-0.0863,0.00653267532626272,"{""Q1"": 4.48, ""Q2"": 1.52, ""Q3"": 4.48, ""Q4"": 0.5, ""Q5"": 0.0}",0.02640050599817756,True,RBM22,K562
+m5C,991,6,985,0.605,0.8864,1.4433,-0.5569,enriched_at_low_Z,2241.5,0.3074907404101389,-0.0325,0.30739088604561976,"{""Q1"": 1.49, ""Q2"": 0.51, ""Q3"": 0.5, ""Q4"": 0.0, ""Q5"": 0.52}",0.4099876538801852,False,RBM22,K562
+ac4C,991,2,989,0.202,8.7856,1.4433,7.3423,enriched_at_high_Z,,,,,"{""Q1"": 0.0, ""Q2"": 0.0, ""Q3"": 0.0, ""Q4"": 0.0, ""Q5"": 1.04}",1.0,False,RBM22,K562

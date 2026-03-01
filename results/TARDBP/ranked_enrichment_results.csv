@@ -1,0 +1,5 @@
+modification,n_total_peaks,n_mod_positive,n_mod_negative,pct_mod_positive,median_z_mod_pos,median_z_mod_neg,median_z_diff,direction,mann_whitney_u,mann_whitney_p,spearman_rho,spearman_p,z_bin_frequencies,mann_whitney_p_adj,significant,rbp,cell_line
+m6A,7010,269,6741,3.837,3.7337,7.0322,-3.2986,enriched_at_low_Z,709760.5,5.25359214874876e-10,-0.0742,4.99506067862036e-10,{},2.101436859499504e-09,True,TARDBP,K562
+pseudoU,7010,2,7008,0.029,5.32,7.0322,-1.7123,enriched_at_low_Z,,,,,{},1.0,False,TARDBP,K562
+m5C,7010,15,6995,0.214,3.4169,7.0322,-3.6153,enriched_at_low_Z,32298.5,0.008188125634653728,-0.0316,0.008177429578217309,{},0.016376251269307456,True,TARDBP,K562
+ac4C,7010,0,7010,0.0,,7.0322,,insufficient_data,,,,,{},1.0,False,TARDBP,K562
