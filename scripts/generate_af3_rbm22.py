@@ -30,7 +30,6 @@ Usage:
   cd /path/to/RNAMod-RBNS
   python scripts/generate_af3_rbm22.py [--output results/RBM22/af3_inputs]
                                         [--n-peaks 15]
-                                        [--seeds 1 2 3 4 5]
                                         [--window 15]
 """
 
@@ -243,7 +242,6 @@ def build_af3_json(
     protein_seq: str,
     rna_seq: str,
     pseudou_pos: Optional[int],
-    seeds: List[int],
 ) -> dict:
     """
     Return an AlphaFold Server-dialect JSON dict.
@@ -261,13 +259,13 @@ def build_af3_json(
             "basePosition": pseudou_pos
         })
 
-    rna_entity: dict = {"sequence": rna_seq}
+    rna_entity: dict = {"sequence": rna_seq, "count": 1}
     if modifications:
         rna_entity["modifications"] = modifications
 
     return {
         "name": job_name,
-        "modelSeeds": [str(s) for s in seeds],  # must be strings per AF3 spec
+        "modelSeeds": [],   # empty = server assigns random seed (recommended)
         "sequences": [
             {"proteinChain": {"sequence": protein_seq, "count": 1}},
             {"rnaSequence": rna_entity},
@@ -345,10 +343,6 @@ def main():
         help="Max number of discrepant peaks to model (default: 15)"
     )
     parser.add_argument(
-        "--seeds", type=int, nargs="+", default=[1],
-        help="Model seeds — AF3 server allows max 1 seed per job (default: 1)"
-    )
-    parser.add_argument(
         "--window", type=int, default=HALF_WIN,
         help=f"Nucleotides on each side of pseudoU (default: {HALF_WIN} → 31 nt total)"
     )
@@ -423,7 +417,7 @@ def main():
         # --- Unmodified job ---
         name_unmod = f"RBM22_{safe_id}_unmod"
         job_unmod  = build_af3_json(name_unmod, protein_seq, rna_seq,
-                                    pseudou_pos=None, seeds=args.seeds)
+                                    pseudou_pos=None)
         errs_unmod = validate_job(job_unmod)
         all_jobs.append(job_unmod)
 
@@ -433,7 +427,7 @@ def main():
         if psu_pos is not None:
             name_mod = f"RBM22_{safe_id}_pseudoU"
             job_mod  = build_af3_json(name_mod, protein_seq, rna_seq,
-                                      pseudou_pos=psu_pos, seeds=args.seeds)
+                                      pseudou_pos=psu_pos)
             errs_mod = validate_job(job_mod)
             all_jobs.append(job_mod)
             n_pairs += 1
