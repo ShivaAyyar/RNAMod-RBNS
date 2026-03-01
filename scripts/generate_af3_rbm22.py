@@ -42,7 +42,8 @@ from pathlib import Path
 
 import pandas as pd
 import pybedtools
-import requests
+import urllib.error
+import urllib.request
 
 
 # ---------------------------------------------------------------------------
@@ -65,12 +66,12 @@ def fetch_uniprot_sequence(uniprot_id: str) -> tuple[str, str]:
     """
     url = f"https://rest.uniprot.org/uniprotkb/{uniprot_id}.fasta"
     print(f"Fetching {uniprot_id} from UniProt...")
-    resp = requests.get(url, timeout=30)
-    if resp.status_code != 200:
-        raise RuntimeError(
-            f"UniProt fetch failed (HTTP {resp.status_code}) for {uniprot_id}"
-        )
-    lines = resp.text.strip().split("\n")
+    try:
+        with urllib.request.urlopen(url, timeout=30) as resp:
+            text = resp.read().decode("utf-8")
+    except urllib.error.HTTPError as e:
+        raise RuntimeError(f"UniProt fetch failed (HTTP {e.code}) for {uniprot_id}")
+    lines = text.strip().split("\n")
     header = lines[0]                       # >sp|P45957|RBM22_HUMAN ...
     sequence = "".join(lines[1:])
     # Extract name from header
