@@ -345,8 +345,8 @@ def main():
         help="Max number of discrepant peaks to model (default: 15)"
     )
     parser.add_argument(
-        "--seeds", type=int, nargs="+", default=[1, 2, 3, 4, 5],
-        help="Model seeds (default: 1 2 3 4 5)"
+        "--seeds", type=int, nargs="+", default=[1],
+        help="Model seeds — AF3 server allows max 1 seed per job (default: 1)"
     )
     parser.add_argument(
         "--window", type=int, default=HALF_WIN,
