@@ -39,6 +39,7 @@ import json
 import re
 import sys
 from pathlib import Path
+from typing import Dict, List, Optional, Tuple
 
 import pandas as pd
 import pybedtools
@@ -59,7 +60,7 @@ HALF_WIN   = 15                # nucleotides on each side → 31 nt total centre
 # Step 1: Fetch RBM22 protein sequence from UniProt
 # ---------------------------------------------------------------------------
 
-def fetch_uniprot_sequence(uniprot_id: str) -> tuple[str, str]:
+def fetch_uniprot_sequence(uniprot_id: str) -> Tuple[str, str]:
     """
     Return (protein_name, sequence) for a UniProt accession.
     Raises RuntimeError on network/parsing failure.
@@ -103,7 +104,7 @@ def load_discrepant_peaks(results_dir: Path) -> pd.DataFrame:
     return discrepant
 
 
-def parse_peak_coords(peak_id: str) -> tuple[str, int, int, str]:
+def parse_peak_coords(peak_id: str) -> Tuple[str, int, int, str]:
     """
     Parse chrom, start, end, strand from a peak_id like:
       RBM22_K562_IDR::chr19:50804490-50804540(-)
@@ -140,7 +141,7 @@ def select_peaks_with_pseudou(
         m = _coord_re.search(pid)
         return f"{m.group(1)}:{m.group(2)}" if m else pid
 
-    pseudou_pos_map: dict[str, int] = {}
+    pseudou_pos_map: Dict[str, int] = {}
     for feat in overlap:
         # feat.fields[3] is peak_id (from 6-col BED written by scored_df_to_bed)
         # feat.fields[6] is pseudoU chrom, [7] start, [8] end
@@ -184,7 +185,7 @@ def reverse_complement_rna(seq: str) -> str:
 def extract_rna_window(
     row: pd.Series,
     half_window: int = HALF_WIN,
-) -> dict | None:
+) -> Optional[Dict]:
     """
     Given a scored_peaks row with has_pseudou=True, return a dict containing:
       rna_sequence   : 30 nt (or shorter at chromosome edges) RNA string
@@ -247,8 +248,8 @@ def build_af3_json(
     job_name: str,
     protein_seq: str,
     rna_seq: str,
-    pseudou_pos: int | None,
-    seeds: list[int],
+    pseudou_pos: Optional[int],
+    seeds: List[int],
 ) -> dict:
     """
     Return an AlphaFold Server-dialect JSON dict.
@@ -286,7 +287,7 @@ def build_af3_json(
 # Step 5: Validate a single JSON dict
 # ---------------------------------------------------------------------------
 
-def validate_job(data: dict) -> list[str]:
+def validate_job(data: dict) -> List[str]:
     """Return a list of error strings (empty = valid)."""
     errors = []
     for field in ("name", "modelSeeds", "sequences", "dialect", "version"):
