@@ -2,11 +2,7 @@
   {
     "name": "RBM22_RBM22_K562_IDR_chr15_67839955-67840005_-_unmod",
     "modelSeeds": [
-      "1",
-      "2",
-      "3",
-      "4",
-      "5"
+      "1"
     ],
     "sequences": [
       {
@@ -27,11 +23,7 @@
   {
     "name": "RBM22_RBM22_K562_IDR_chr15_67839955-67840005_-_pseudoU",
     "modelSeeds": [
-      "1",
-      "2",
-      "3",
-      "4",
-      "5"
+      "1"
     ],
     "sequences": [
       {
@@ -58,11 +50,7 @@
   {
     "name": "RBM22_RBM22_K562_IDR_chr8_56917125-56917175_unmod",
     "modelSeeds": [
-      "1",
-      "2",
-      "3",
-      "4",
-      "5"
+      "1"
     ],
     "sequences": [
       {
@@ -83,11 +71,7 @@
   {
     "name": "RBM22_RBM22_K562_IDR_chr8_56917125-56917175_pseudoU",
     "modelSeeds": [
-      "1",
-      "2",
-      "3",
-      "4",
-      "5"
+      "1"
     ],
     "sequences": [
       {
@@ -114,11 +98,7 @@
   {
     "name": "RBM22_RBM22_K562_IDR_chr3_196784996-196785046_-_unmod",
     "modelSeeds": [
-      "1",
-      "2",
-      "3",
-      "4",
-      "5"
+      "1"
     ],
     "sequences": [
       {
@@ -139,11 +119,7 @@
   {
     "name": "RBM22_RBM22_K562_IDR_chr3_196784996-196785046_-_pseudoU",
     "modelSeeds": [
-      "1",
-      "2",
-      "3",
-      "4",
-      "5"
+      "1"
     ],
     "sequences": [
       {
@@ -170,11 +146,7 @@
   {
     "name": "RBM22_RBM22_K562_IDR_chr11_63970497-63970547_unmod",
     "modelSeeds": [
-      "1",
-      "2",
-      "3",
-      "4",
-      "5"
+      "1"
     ],
     "sequences": [
       {
@@ -195,11 +167,7 @@
   {
     "name": "RBM22_RBM22_K562_IDR_chr11_63970497-63970547_pseudoU",
     "modelSeeds": [
-      "1",
-      "2",
-      "3",
-      "4",
-      "5"
+      "1"
     ],
     "sequences": [
       {
@@ -226,11 +194,7 @@
   {
     "name": "RBM22_RBM22_K562_IDR_chr1_27325245-27325295_unmod",
     "modelSeeds": [
-      "1",
-      "2",
-      "3",
-      "4",
-      "5"
+      "1"
     ],
     "sequences": [
       {
@@ -251,11 +215,7 @@
   {
     "name": "RBM22_RBM22_K562_IDR_chr1_27325245-27325295_pseudoU",
     "modelSeeds": [
-      "1",
-      "2",
-      "3",
-      "4",
-      "5"
+      "1"
     ],
     "sequences": [
       {
@@ -282,11 +242,7 @@
   {
     "name": "RBM22_RBM22_K562_IDR_chr19_893507-893557_unmod",
     "modelSeeds": [
-      "1",
-      "2",
-      "3",
-      "4",
-      "5"
+      "1"
     ],
     "sequences": [
       {
@@ -307,11 +263,7 @@
   {
     "name": "RBM22_RBM22_K562_IDR_chr19_893507-893557_pseudoU",
     "modelSeeds": [
-      "1",
-      "2",
-      "3",
-      "4",
-      "5"
+      "1"
     ],
     "sequences": [
       {
@@ -338,11 +290,7 @@
   {
     "name": "RBM22_RBM22_K562_IDR_chr19_893514-893564_unmod",
     "modelSeeds": [
-      "1",
-      "2",
-      "3",
-      "4",
-      "5"
+      "1"
     ],
     "sequences": [
       {
@@ -363,11 +311,7 @@
   {
     "name": "RBM22_RBM22_K562_IDR_chr19_893514-893564_pseudoU",
     "modelSeeds": [
-      "1",
-      "2",
-      "3",
-      "4",
-      "5"
+      "1"
     ],
     "sequences": [
       {
@@ -394,11 +338,7 @@
   {
     "name": "RBM22_RBM22_K562_IDR_chr3_195214815-195214865_unmod",
     "modelSeeds": [
-      "1",
-      "2",
-      "3",
-      "4",
-      "5"
+      "1"
     ],
     "sequences": [
       {
@@ -419,11 +359,7 @@
   {
     "name": "RBM22_RBM22_K562_IDR_chr3_195214815-195214865_pseudoU",
     "modelSeeds": [
-      "1",
-      "2",
-      "3",
-      "4",
-      "5"
+      "1"
     ],
     "sequences": [
       {
@@ -450,11 +386,7 @@
   {
     "name": "RBM22_RBM22_K562_IDR_chr11_63970492-63970542_unmod",
     "modelSeeds": [
-      "1",
-      "2",
-      "3",
-      "4",
-      "5"
+      "1"
     ],
     "sequences": [
       {
@@ -475,11 +407,7 @@
   {
     "name": "RBM22_RBM22_K562_IDR_chr11_63970492-63970542_pseudoU",
     "modelSeeds": [
-      "1",
-      "2",
-      "3",
-      "4",
-      "5"
+      "1"
     ],
     "sequences": [
       {
@@ -506,11 +434,7 @@
   {
     "name": "RBM22_RBM22_K562_IDR_chr11_63970489-63970539_unmod",
     "modelSeeds": [
-      "1",
-      "2",
-      "3",
-      "4",
-      "5"
+      "1"
     ],
     "sequences": [
       {
@@ -531,11 +455,7 @@
   {
     "name": "RBM22_RBM22_K562_IDR_chr11_63970489-63970539_pseudoU",
     "modelSeeds": [
-      "1",
-      "2",
-      "3",
-      "4",
-      "5"
+      "1"
     ],
     "sequences": [
       {
@@ -562,11 +482,7 @@
   {
     "name": "RBM22_RBM22_K562_IDR_chr8_56917103-56917153_unmod",
     "modelSeeds": [
-      "1",
-      "2",
-      "3",
-      "4",
-      "5"
+      "1"
     ],
     "sequences": [
       {
@@ -587,11 +503,7 @@
   {
     "name": "RBM22_RBM22_K562_IDR_chr8_56917103-56917153_pseudoU",
     "modelSeeds": [
-      "1",
-      "2",
-      "3",
-      "4",
-      "5"
+      "1"
     ],
     "sequences": [
       {
@@ -618,11 +530,7 @@
   {
     "name": "RBM22_RBM22_K562_IDR_chr19_893503-893553_unmod",
     "modelSeeds": [
-      "1",
-      "2",
-      "3",
-      "4",
-      "5"
+      "1"
     ],
     "sequences": [
       {
@@ -643,11 +551,7 @@
   {
     "name": "RBM22_RBM22_K562_IDR_chr19_893503-893553_pseudoU",
     "modelSeeds": [
-      "1",
-      "2",
-      "3",
-      "4",
-      "5"
+      "1"
     ],
     "sequences": [
       {
@@ -674,11 +578,7 @@
   {
     "name": "RBM22_RBM22_K562_IDR_chr4_39297596-39297646_-_unmod",
     "modelSeeds": [
-      "1",
-      "2",
-      "3",
-      "4",
-      "5"
+      "1"
     ],
     "sequences": [
       {
@@ -699,11 +599,7 @@
   {
     "name": "RBM22_RBM22_K562_IDR_chr4_39297596-39297646_-_pseudoU",
     "modelSeeds": [
-      "1",
-      "2",
-      "3",
-      "4",
-      "5"
+      "1"
     ],
     "sequences": [
       {
@@ -730,11 +626,7 @@
   {
     "name": "RBM22_RBM22_K562_IDR_chr4_88684851-88684901_-_unmod",
     "modelSeeds": [
-      "1",
-      "2",
-      "3",
-      "4",
-      "5"
+      "1"
     ],
     "sequences": [
       {
@@ -755,11 +647,7 @@
   {
     "name": "RBM22_RBM22_K562_IDR_chr4_88684851-88684901_-_pseudoU",
     "modelSeeds": [
-      "1",
-      "2",
-      "3",
-      "4",
-      "5"
+      "1"
     ],
     "sequences": [
       {
@@ -786,11 +674,7 @@
   {
     "name": "RBM22_RBM22_K562_IDR_chr12_97721733-97721783_unmod",
     "modelSeeds": [
-      "1",
-      "2",
-      "3",
-      "4",
-      "5"
+      "1"
     ],
     "sequences": [
       {
@@ -811,11 +695,7 @@
   {
     "name": "RBM22_RBM22_K562_IDR_chr12_97721733-97721783_pseudoU",
     "modelSeeds": [
-      "1",
-      "2",
-      "3",
-      "4",
-      "5"
+      "1"
     ],
     "sequences": [
       {
