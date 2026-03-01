@@ -268,7 +268,9 @@ def run_analysis(args) -> dict:
                 run_gat=args.run_gat,
                 workspace_bed=filtered_bed,
                 gat_n_samples=args.gat_n_samples,
-                output_dir=str(outdir)
+                output_dir=str(outdir),
+                scored_df=scored_df,
+                peaks_bed=filtered_bed
             )
             enrichment_results['rbp'] = args.rbp
             enrichment_results['cell_line'] = args.cell_line
@@ -300,19 +302,6 @@ def run_analysis(args) -> dict:
     if args.enrichment_method in ('ranked', 'both'):
         logger.info("\n--- Step 5b: Running ranked enrichment analysis ---")
 
-        # Annotate scored_df with has_{mod_name} in-place so viz functions can use them
-        for mod_bed, mod_name in zip(args.mods, args.mod_names):
-            col = f'has_{mod_name}'
-            import pybedtools as _pbt
-            peaks_tool = _pbt.BedTool(filtered_bed)
-            if args.overlap_window > 0 and args.chrom_sizes:
-                peaks_tool = peaks_tool.slop(b=args.overlap_window, g=args.chrom_sizes)
-            mods_tool = _pbt.BedTool(mod_bed)
-            overlapping_ids = set()
-            for feat in peaks_tool.intersect(mods_tool, u=True):
-                overlapping_ids.add(f"{feat.chrom}:{feat.start}-{feat.end}")
-            scored_df[col] = scored_df['peak_id'].isin(overlapping_ids)
-
         ranked_results = ea.run_ranked_enrichment_analysis(
             peaks_bed=filtered_bed,
             scored_df=scored_df,
@@ -324,6 +313,15 @@ def run_analysis(args) -> dict:
         ranked_results['rbp'] = args.rbp
         ranked_results['cell_line'] = args.cell_line
         ranked_results.to_csv(outdir / 'ranked_enrichment_results.csv', index=False)
+
+        # Build has_{mod} columns in scored_df for visualization.
+        # Use the shared get_overlap_mask helper — identical to Fisher/Mann-Whitney.
+        for mod_bed, mod_name in zip(args.mods, args.mod_names):
+            scored_df[f'has_{mod_name}'] = ea.get_overlap_mask(
+                filtered_bed, mod_bed, scored_df,
+                window=args.overlap_window,
+                chrom_sizes=args.chrom_sizes
+            )
 
         if 'significant' in ranked_results.columns:
             sig_ranked = ranked_results[ranked_results['significant']]

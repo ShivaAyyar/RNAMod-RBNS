@@ -17,6 +17,7 @@ References:
 """
 
 import os
+import re
 import subprocess
 import tempfile
 
@@ -33,6 +34,84 @@ from statsmodels.stats.multitest import multipletests
 logger = logging.getLogger(__name__)
 
 
+def get_overlap_mask(
+    peaks_bed: str,
+    mod_bed: str,
+    scored_df: pd.DataFrame,
+    window: int = 0,
+    chrom_sizes: Optional[str] = None
+) -> pd.Series:
+    """
+    Return a boolean Series indicating which scored_df rows overlap a
+    modification BED file.
+
+    This is the single shared intersection function used by ALL three
+    statistical tests (Fisher, Mann-Whitney, visualization annotations).
+    Operates on peaks_filtered.bed and uses a coord-key regex to match
+    bedtools feature coordinates back to scored_df rows.
+
+    The coord key extracted from peak_id values is ``chrN:start-end``
+    (strand suffix and upstream name prefix stripped). bedtools features
+    expose the same plain coordinates via feat.chrom/start/end.
+
+    Parameters
+    ----------
+    peaks_bed : str
+        Path to peaks BED file (peaks_filtered.bed).
+    mod_bed : str
+        Path to modification sites BED file.
+    scored_df : pd.DataFrame
+        DataFrame with a ``peak_id`` column. Must be indexed 0..N-1.
+    window : int
+        Extend peaks by this many bp on each side before intersecting.
+        0 = exact intersection (default).
+    chrom_sizes : str, optional
+        Path to chromosome sizes file (required when window > 0).
+
+    Returns
+    -------
+    pd.Series
+        Boolean Series aligned to scored_df.index (True = overlaps mod).
+    """
+    _coord_re = re.compile(r'(chr[^:()]+):(\d+-\d+)')
+
+    def _peak_coord_key(peak_id: str) -> str:
+        """Extract 'chrN:start-end' from a peak_id."""
+        pid = peak_id.split('(')[0]
+        m = _coord_re.search(pid)
+        if m:
+            return f"{m.group(1)}:{m.group(2)}"
+        return pid.rsplit(':', 1)[-1] if ':' in pid else pid
+
+    coord_to_idx = {_peak_coord_key(pid): i
+                    for i, pid in enumerate(scored_df['peak_id'])}
+
+    peaks = pybedtools.BedTool(peaks_bed)
+    mods = pybedtools.BedTool(mod_bed)
+
+    if window > 0 and chrom_sizes:
+        peaks_q = peaks.slop(b=window, g=chrom_sizes)
+        # -wa returns original (unslopped) A-record coordinates
+        overlapping_feats = peaks_q.intersect(mods, u=True, wa=True)
+    else:
+        overlapping_feats = peaks.intersect(mods, u=True)
+
+    overlap_idxs: set = set()
+    for feat in overlapping_feats:
+        key = f"{feat.chrom}:{feat.start}-{feat.end}"
+        if key in coord_to_idx:
+            overlap_idxs.add(coord_to_idx[key])
+
+    mask = pd.Series(False, index=scored_df.index)
+    if overlap_idxs:
+        mask.iloc[list(overlap_idxs)] = True
+
+    logger.debug(
+        f"get_overlap_mask: {int(mask.sum())}/{len(mask)} peaks overlap {mod_bed}"
+    )
+    return mask
+
+
 def count_modification_overlaps(
     peaks_bed: str,
     mod_bed: str,
@@ -42,6 +121,12 @@ def count_modification_overlaps(
 ) -> Tuple[int, int]:
     """
     Count peaks overlapping modification sites.
+
+    .. deprecated::
+        Prefer :func:`get_overlap_mask` which uses a consistent coord-key
+        approach compatible with scored_df peak IDs.  This function is kept
+        for backward compatibility and for callers that do not have a
+        scored_df available.
 
     Uses bedtools intersect with -u flag for unique peaks only.
 
@@ -55,9 +140,7 @@ def count_modification_overlaps(
         Minimum overlap in bp (default: 1)
     window : int
         Extend peaks by this many bp on each side before intersection.
-        0 = exact intersection (default). Useful for single-nucleotide
-        modification sites (e.g. RMBase) where exact overlap may miss
-        sites at peak edges.
+        0 = exact intersection (default).
     chrom_sizes : str, optional
         Path to chromosome sizes file (required when window > 0)
 
@@ -157,10 +240,22 @@ def run_enrichment_analysis(
     run_gat: bool = False,
     workspace_bed: Optional[str] = None,
     gat_n_samples: int = 10000,
-    output_dir: Optional[str] = None
+    output_dir: Optional[str] = None,
+    scored_df: Optional[pd.DataFrame] = None,
+    peaks_bed: Optional[str] = None
 ) -> pd.DataFrame:
     """
     Run enrichment analysis for all modification types.
+
+    When ``scored_df`` and ``peaks_bed`` (peaks_filtered.bed) are provided,
+    modification overlaps are computed using :func:`get_overlap_mask` on the
+    full peak set and then subsetted by category.  This ensures Fisher,
+    Mann-Whitney, and visualization annotations all use *identical* bedtools
+    intersection logic and input files.
+
+    If ``scored_df``/``peaks_bed`` are not provided the function falls back to
+    running bedtools intersect directly on ``canonical_bed`` and
+    ``discrepant_bed`` (legacy behaviour, kept for backward compatibility).
 
     Parameters
     ----------
@@ -177,6 +272,13 @@ def run_enrichment_analysis(
     fdr_method : str
         Method for multipletests: 'fdr_bh' (Benjamini-Hochberg),
         'bonferroni', 'holm', etc. (default: 'fdr_bh')
+    scored_df : pd.DataFrame, optional
+        Full scored peaks DataFrame with ``peak_id`` and ``category``
+        columns. When provided together with ``peaks_bed``, overlaps are
+        computed via :func:`get_overlap_mask` on the full peak set.
+    peaks_bed : str, optional
+        Path to peaks_filtered.bed (all filtered peaks). Required when
+        ``scored_df`` is provided.
 
     Returns
     -------
@@ -198,14 +300,22 @@ def run_enrichment_analysis(
     if len(mod_beds) != len(mod_names):
         raise ValueError("mod_beds and mod_names must have same length")
 
-    # Check files exist
-    for bed_file in [canonical_bed, discrepant_bed] + mod_beds:
-        if not Path(bed_file).exists():
-            raise FileNotFoundError(f"File not found: {bed_file}")
+    use_shared_mask = (scored_df is not None and peaks_bed is not None
+                       and Path(peaks_bed).exists())
 
-    # Get total counts
-    canon_total = len(pybedtools.BedTool(canonical_bed))
-    disc_total = len(pybedtools.BedTool(discrepant_bed))
+    if use_shared_mask:
+        # Derive category totals from scored_df (consistent with ranked analysis)
+        canon_mask_base = scored_df['category'] == 'canonical'
+        disc_mask_base = scored_df['category'] == 'discrepant'
+        canon_total = int(canon_mask_base.sum())
+        disc_total = int(disc_mask_base.sum())
+    else:
+        # Fallback: read totals from separate BED files
+        for bed_file in [canonical_bed, discrepant_bed] + mod_beds:
+            if not Path(bed_file).exists():
+                raise FileNotFoundError(f"File not found: {bed_file}")
+        canon_total = len(pybedtools.BedTool(canonical_bed))
+        disc_total = len(pybedtools.BedTool(discrepant_bed))
 
     logger.info(f"Canonical peaks: {canon_total}, Discrepant peaks: {disc_total}")
 
@@ -218,10 +328,20 @@ def run_enrichment_analysis(
     for mod_bed, mod_name in zip(mod_beds, mod_names):
         logger.info(f"Processing {mod_name}...")
 
-        canon_overlap, _ = count_modification_overlaps(
-            canonical_bed, mod_bed, window=window, chrom_sizes=chrom_sizes)
-        disc_overlap, _ = count_modification_overlaps(
-            discrepant_bed, mod_bed, window=window, chrom_sizes=chrom_sizes)
+        if use_shared_mask:
+            # Single intersection on peaks_filtered.bed; subset by category.
+            # This is the same operation as run_ranked_enrichment_analysis.
+            full_mask = get_overlap_mask(
+                peaks_bed, mod_bed, scored_df,
+                window=window, chrom_sizes=chrom_sizes
+            )
+            canon_overlap = int((full_mask & canon_mask_base).sum())
+            disc_overlap = int((full_mask & disc_mask_base).sum())
+        else:
+            canon_overlap, _ = count_modification_overlaps(
+                canonical_bed, mod_bed, window=window, chrom_sizes=chrom_sizes)
+            disc_overlap, _ = count_modification_overlaps(
+                discrepant_bed, mod_bed, window=window, chrom_sizes=chrom_sizes)
 
         odds_ratio, pvalue = fisher_enrichment_test(
             disc_overlap, disc_total,
@@ -498,47 +618,17 @@ def run_ranked_enrichment_analysis(
         f"for {len(mod_names)} modifications"
     )
 
-    peaks = pybedtools.BedTool(peaks_bed)
-
-    if window > 0 and chrom_sizes:
-        peaks_for_intersect = peaks.slop(b=window, g=chrom_sizes)
-    else:
-        peaks_for_intersect = peaks
-
-    # Build a set of peak IDs present in scored_df for fast lookup
-    # peak_id format matches pa.scored_df_to_bed: "{chrom}:{start}-{end}"
-    scored_index = scored_df.set_index('peak_id')['score_max']
-
     results = []
     pvalues = []
 
     for mod_bed, mod_name in zip(mod_beds, mod_names):
         logger.info(f"  Ranked analysis: {mod_name}...")
 
-        # Find which peaks overlap this modification
-        mods = pybedtools.BedTool(mod_bed)
-        overlapping = peaks_for_intersect.intersect(mods, u=True)
-
-        # Build set of overlapping peak IDs (chrom:start-end)
-        # Use original (non-slopped) coordinates from scored_df
-        overlapping_ids = set()
-        for feat in overlapping:
-            if window > 0:
-                # The slopped peak coords differ from original; re-intersect
-                # using -wa to get original peak coords instead
-                pass
-            else:
-                overlapping_ids.add(f"{feat.chrom}:{feat.start}-{feat.end}")
-
-        # For windowed mode, use -wa (write original A record) to recover IDs
-        if window > 0 and chrom_sizes:
-            overlapping_wa = peaks.intersect(mods, u=True, wa=True)
-            overlapping_ids = set()
-            for feat in overlapping_wa:
-                overlapping_ids.add(f"{feat.chrom}:{feat.start}-{feat.end}")
-
-        # Annotate scored_df
-        has_mod = scored_df['peak_id'].isin(overlapping_ids)
+        # Use the shared intersection helper — same logic as Fisher test.
+        has_mod = get_overlap_mask(
+            peaks_bed, mod_bed, scored_df,
+            window=window, chrom_sizes=chrom_sizes
+        )
         z_mod_pos = scored_df.loc[has_mod, 'score_max'].values
         z_mod_neg = scored_df.loc[~has_mod, 'score_max'].values
 
