@@ -247,6 +247,13 @@ cd "${SRC_DIR}"
 # Results are written to ${OUTPUT_DIR}/gat_results.csv
 GAT_FLAG="--run-gat"
 
+# Enrichment analysis method:
+#   "both"        - Fisher's exact test (categorical) + Mann-Whitney ranked test (DEFAULT)
+#   "categorical" - Fisher's exact test only (fast, no ranked output)
+#   "ranked"      - Mann-Whitney ranked test only (skips Fisher; no GAT)
+# Results written to enrichment_results.csv and/or ranked_enrichment_results.csv
+ENRICHMENT_METHOD="both"
+
 python main.py \
     --rbp "${RBP}" \
     --rbns "${RBNS_FILE}" \
@@ -259,6 +266,7 @@ python main.py \
     --cell-line "${CELL_LINE}" \
     --canonical-threshold "${CANONICAL_THRESHOLD}" \
     --discrepant-threshold "${DISCREPANT_THRESHOLD}" \
+    --enrichment-method "${ENRICHMENT_METHOD}" \
     ${GAT_FLAG}
 
 # ==========================
@@ -277,8 +285,14 @@ echo "=============================================="
 # Check for significant results
 if [[ -f "${OUTPUT_DIR}/enrichment_results.csv" ]]; then
     echo ""
-    echo "Enrichment Results Summary:"
+    echo "Categorical Enrichment Results (Fisher):"
     head -20 "${OUTPUT_DIR}/enrichment_results.csv"
+fi
+
+if [[ -f "${OUTPUT_DIR}/ranked_enrichment_results.csv" ]]; then
+    echo ""
+    echo "Ranked Enrichment Results (Mann-Whitney):"
+    head -20 "${OUTPUT_DIR}/ranked_enrichment_results.csv"
 fi
 
 # Special message for positive controls

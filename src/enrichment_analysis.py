@@ -25,7 +25,8 @@ import pybedtools
 import logging
 from pathlib import Path
 from typing import List, Tuple, Optional, Dict
-from scipy.stats import fisher_exact
+import json
+from scipy.stats import fisher_exact, mannwhitneyu, spearmanr
 from statsmodels.stats.multitest import multipletests
 
 # Configure logging
@@ -440,6 +441,205 @@ def run_gat_analysis(
                 os.unlink(tmp)
             except OSError:
                 pass
+
+
+def run_ranked_enrichment_analysis(
+    peaks_bed: str,
+    scored_df: pd.DataFrame,
+    mod_beds: List[str],
+    mod_names: List[str],
+    chrom_sizes: Optional[str] = None,
+    window: int = 0,
+    n_bins: int = 5,
+    apply_fdr: bool = True,
+    fdr_method: str = 'fdr_bh'
+) -> pd.DataFrame:
+    """
+    Ranked continuous enrichment analysis using Mann-Whitney U test.
+
+    Tests whether peaks overlapping modification sites have systematically
+    different RBNS Z-scores than peaks that don't, using all filtered peaks
+    (not just canonical/discrepant subsets). This eliminates threshold
+    sensitivity and detects enrichment in either direction.
+
+    Parameters
+    ----------
+    peaks_bed : str
+        Path to ALL filtered peaks BED file (peaks_filtered.bed)
+    scored_df : pd.DataFrame
+        DataFrame with 'peak_id' and 'score_max' columns (all filtered peaks)
+    mod_beds : list
+        List of paths to modification BED files
+    mod_names : list
+        List of modification names (same order as mod_beds)
+    chrom_sizes : str, optional
+        Path to chromosome sizes file (required if window > 0)
+    window : int
+        Extend peaks by this many bp on each side before intersecting.
+        0 = exact intersection (default)
+    n_bins : int
+        Number of Z-score quantile bins for binned frequency analysis (default: 5)
+    apply_fdr : bool
+        Whether to apply BH FDR correction (default: True)
+    fdr_method : str
+        Method for multipletests (default: 'fdr_bh')
+
+    Returns
+    -------
+    pd.DataFrame
+        Results with columns: modification, n_total_peaks, n_mod_positive,
+        n_mod_negative, pct_mod_positive, median_z_mod_pos, median_z_mod_neg,
+        median_z_diff, direction, mann_whitney_u, mann_whitney_p,
+        mann_whitney_p_adj, significant, spearman_rho, spearman_p,
+        z_bin_frequencies
+    """
+    logger.info(
+        f"Running ranked enrichment analysis on {len(scored_df)} peaks "
+        f"for {len(mod_names)} modifications"
+    )
+
+    peaks = pybedtools.BedTool(peaks_bed)
+
+    if window > 0 and chrom_sizes:
+        peaks_for_intersect = peaks.slop(b=window, g=chrom_sizes)
+    else:
+        peaks_for_intersect = peaks
+
+    # Build a set of peak IDs present in scored_df for fast lookup
+    # peak_id format matches pa.scored_df_to_bed: "{chrom}:{start}-{end}"
+    scored_index = scored_df.set_index('peak_id')['score_max']
+
+    results = []
+    pvalues = []
+
+    for mod_bed, mod_name in zip(mod_beds, mod_names):
+        logger.info(f"  Ranked analysis: {mod_name}...")
+
+        # Find which peaks overlap this modification
+        mods = pybedtools.BedTool(mod_bed)
+        overlapping = peaks_for_intersect.intersect(mods, u=True)
+
+        # Build set of overlapping peak IDs (chrom:start-end)
+        # Use original (non-slopped) coordinates from scored_df
+        overlapping_ids = set()
+        for feat in overlapping:
+            if window > 0:
+                # The slopped peak coords differ from original; re-intersect
+                # using -wa to get original peak coords instead
+                pass
+            else:
+                overlapping_ids.add(f"{feat.chrom}:{feat.start}-{feat.end}")
+
+        # For windowed mode, use -wa (write original A record) to recover IDs
+        if window > 0 and chrom_sizes:
+            overlapping_wa = peaks.intersect(mods, u=True, wa=True)
+            overlapping_ids = set()
+            for feat in overlapping_wa:
+                overlapping_ids.add(f"{feat.chrom}:{feat.start}-{feat.end}")
+
+        # Annotate scored_df
+        has_mod = scored_df['peak_id'].isin(overlapping_ids)
+        z_mod_pos = scored_df.loc[has_mod, 'score_max'].values
+        z_mod_neg = scored_df.loc[~has_mod, 'score_max'].values
+
+        n_total = len(scored_df)
+        n_pos = int(has_mod.sum())
+        n_neg = n_total - n_pos
+        pct_pos = 100.0 * n_pos / n_total if n_total > 0 else 0.0
+
+        # Mann-Whitney U test (two-tailed)
+        if n_pos >= 3 and n_neg >= 3:
+            u_stat, mw_p = mannwhitneyu(
+                z_mod_pos, z_mod_neg, alternative='two-sided')
+        else:
+            logger.warning(
+                f"  {mod_name}: insufficient peaks for Mann-Whitney "
+                f"(mod+={n_pos}, mod-={n_neg}). Skipping."
+            )
+            u_stat, mw_p = float('nan'), float('nan')
+
+        # Median effect sizes
+        med_pos = float(pd.Series(z_mod_pos).median()) if n_pos > 0 else float('nan')
+        med_neg = float(pd.Series(z_mod_neg).median()) if n_neg > 0 else float('nan')
+        med_diff = (med_pos - med_neg) if not (
+            pd.isna(med_pos) or pd.isna(med_neg)) else float('nan')
+
+        if pd.isna(med_diff):
+            direction = 'insufficient_data'
+        elif abs(med_diff) < 1e-9:
+            direction = 'no_difference'
+        elif med_diff < 0:
+            direction = 'enriched_at_low_Z'
+        else:
+            direction = 'enriched_at_high_Z'
+
+        # Spearman correlation: score_max vs binary has_mod (0/1)
+        if n_pos >= 3 and n_neg >= 3:
+            rho, sp_p = spearmanr(
+                scored_df['score_max'].values,
+                has_mod.astype(int).values
+            )
+        else:
+            rho, sp_p = float('nan'), float('nan')
+
+        # Binned analysis: modification frequency across Z-score quantiles
+        try:
+            bin_labels = [f'Q{i+1}' for i in range(n_bins)]
+            scored_df_copy = scored_df.copy()
+            scored_df_copy['_has_mod'] = has_mod
+            scored_df_copy['_zbin'] = pd.qcut(
+                scored_df_copy['score_max'],
+                q=n_bins,
+                labels=bin_labels,
+                duplicates='drop'
+            )
+            bin_freqs = (
+                scored_df_copy.groupby('_zbin', observed=True)['_has_mod']
+                .mean()
+                .multiply(100)
+                .round(2)
+                .to_dict()
+            )
+        except Exception:
+            bin_freqs = {}
+
+        results.append({
+            'modification': mod_name,
+            'n_total_peaks': n_total,
+            'n_mod_positive': n_pos,
+            'n_mod_negative': n_neg,
+            'pct_mod_positive': round(pct_pos, 3),
+            'median_z_mod_pos': round(med_pos, 4) if not pd.isna(med_pos) else None,
+            'median_z_mod_neg': round(med_neg, 4) if not pd.isna(med_neg) else None,
+            'median_z_diff': round(med_diff, 4) if not pd.isna(med_diff) else None,
+            'direction': direction,
+            'mann_whitney_u': u_stat,
+            'mann_whitney_p': mw_p,
+            'spearman_rho': round(rho, 4) if not pd.isna(rho) else None,
+            'spearman_p': sp_p,
+            'z_bin_frequencies': json.dumps(bin_freqs)
+        })
+        pvalues.append(mw_p)
+
+        logger.info(
+            f"    {mod_name}: Δmedian={med_diff:+.3f} ({direction}), "
+            f"MW p={mw_p:.2e}, ρ={rho:.3f}"
+            if not pd.isna(mw_p) else
+            f"    {mod_name}: insufficient data"
+        )
+
+    # FDR correction across modifications
+    df = pd.DataFrame(results)
+    if apply_fdr and len(pvalues) > 0:
+        valid_p = [p if not pd.isna(p) else 1.0 for p in pvalues]
+        reject, p_adj, _, _ = multipletests(valid_p, method=fdr_method, alpha=0.05)
+        df['mann_whitney_p_adj'] = p_adj
+        df['significant'] = reject
+    else:
+        df['mann_whitney_p_adj'] = df['mann_whitney_p']
+        df['significant'] = False
+
+    return df
 
 
 def aggregate_rbp_results(

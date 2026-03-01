@@ -253,52 +253,95 @@ def run_analysis(args) -> dict:
     # =========================================================================
     logger.info("\n--- Step 5: Running enrichment analysis ---")
 
-    if len(canonical) > 0 and len(discrepant) > 0:
-        enrichment_results = ea.run_enrichment_analysis(
-            canonical_bed,
-            discrepant_bed,
-            args.mods,
-            args.mod_names,
-            chrom_sizes=args.chrom_sizes,
-            run_gat=args.run_gat,
-            workspace_bed=filtered_bed,
-            gat_n_samples=args.gat_n_samples,
-            output_dir=str(outdir)
-        )
+    enrichment_results = pd.DataFrame()
+    ranked_results = pd.DataFrame()
 
-        # Add metadata
-        enrichment_results['rbp'] = args.rbp
-        enrichment_results['cell_line'] = args.cell_line
+    # -- 5a: Categorical (Fisher + optional GAT) --
+    if args.enrichment_method in ('categorical', 'both'):
+        if len(canonical) > 0 and len(discrepant) > 0:
+            enrichment_results = ea.run_enrichment_analysis(
+                canonical_bed,
+                discrepant_bed,
+                args.mods,
+                args.mod_names,
+                chrom_sizes=args.chrom_sizes,
+                run_gat=args.run_gat,
+                workspace_bed=filtered_bed,
+                gat_n_samples=args.gat_n_samples,
+                output_dir=str(outdir)
+            )
+            enrichment_results['rbp'] = args.rbp
+            enrichment_results['cell_line'] = args.cell_line
+            enrichment_results.to_csv(outdir / 'enrichment_results.csv', index=False)
 
-        # Save results
-        enrichment_results.to_csv(outdir / 'enrichment_results.csv', index=False)
-
-        # Check for significant findings
-        if 'significant' in enrichment_results.columns:
-            sig_results = enrichment_results[enrichment_results['significant']]
-            results['n_significant'] = len(sig_results)
-
-            if len(sig_results) > 0:
-                logger.info("\n*** SIGNIFICANT ENRICHMENTS ***")
-                for _, row in sig_results.iterrows():
-                    logger.info(
-                        f"  {row['modification']}: OR={row['odds_ratio']:.2f}, "
-                        f"p_adj={row['pvalue_adj']:.2e}"
-                    )
-
-                # Special check for positive controls
-                if args.rbp in M6A_READERS:
-                    m6a_sig = sig_results[sig_results['modification'] == 'm6A']
-                    if len(m6a_sig) > 0:
-                        logger.info(f"\n*** POSITIVE CONTROL VALIDATED: {args.rbp} shows m6A enrichment ***")
-                    else:
-                        logger.warning(f"\n*** WARNING: Positive control {args.rbp} did NOT show m6A enrichment ***")
+            if 'significant' in enrichment_results.columns:
+                sig_results = enrichment_results[enrichment_results['significant']]
+                results['n_significant'] = len(sig_results)
+                if len(sig_results) > 0:
+                    logger.info("\n*** SIGNIFICANT ENRICHMENTS (Fisher) ***")
+                    for _, row in sig_results.iterrows():
+                        logger.info(
+                            f"  {row['modification']}: OR={row['odds_ratio']:.2f}, "
+                            f"p_adj={row['pvalue_adj']:.2e}"
+                        )
+                    if args.rbp in M6A_READERS:
+                        m6a_sig = sig_results[sig_results['modification'] == 'm6A']
+                        if len(m6a_sig) > 0:
+                            logger.info(f"\n*** POSITIVE CONTROL VALIDATED: {args.rbp} shows m6A enrichment ***")
+                        else:
+                            logger.warning(f"\n*** WARNING: Positive control {args.rbp} did NOT show m6A enrichment ***")
+            else:
+                results['n_significant'] = 0
         else:
+            logger.warning("Insufficient peaks for categorical enrichment analysis")
             results['n_significant'] = 0
-    else:
-        logger.warning("Insufficient peaks for enrichment analysis")
-        enrichment_results = pd.DataFrame()
-        results['n_significant'] = 0
+
+    # -- 5b: Ranked (Mann-Whitney, all peaks) --
+    if args.enrichment_method in ('ranked', 'both'):
+        logger.info("\n--- Step 5b: Running ranked enrichment analysis ---")
+
+        # Annotate scored_df with has_{mod_name} in-place so viz functions can use them
+        for mod_bed, mod_name in zip(args.mods, args.mod_names):
+            col = f'has_{mod_name}'
+            import pybedtools as _pbt
+            peaks_tool = _pbt.BedTool(filtered_bed)
+            if args.overlap_window > 0 and args.chrom_sizes:
+                peaks_tool = peaks_tool.slop(b=args.overlap_window, g=args.chrom_sizes)
+            mods_tool = _pbt.BedTool(mod_bed)
+            overlapping_ids = set()
+            for feat in peaks_tool.intersect(mods_tool, u=True):
+                overlapping_ids.add(f"{feat.chrom}:{feat.start}-{feat.end}")
+            scored_df[col] = scored_df['peak_id'].isin(overlapping_ids)
+
+        ranked_results = ea.run_ranked_enrichment_analysis(
+            peaks_bed=filtered_bed,
+            scored_df=scored_df,
+            mod_beds=args.mods,
+            mod_names=args.mod_names,
+            chrom_sizes=args.chrom_sizes,
+            window=args.overlap_window
+        )
+        ranked_results['rbp'] = args.rbp
+        ranked_results['cell_line'] = args.cell_line
+        ranked_results.to_csv(outdir / 'ranked_enrichment_results.csv', index=False)
+
+        if 'significant' in ranked_results.columns:
+            sig_ranked = ranked_results[ranked_results['significant']]
+            results['n_significant_ranked'] = len(sig_ranked)
+            if len(sig_ranked) > 0:
+                logger.info("\n*** SIGNIFICANT ENRICHMENTS (Ranked / Mann-Whitney) ***")
+                for _, row in sig_ranked.iterrows():
+                    logger.info(
+                        f"  {row['modification']}: "
+                        f"Δmedian={row['median_z_diff']:+.3f}, "
+                        f"direction={row['direction']}, "
+                        f"MW p_adj={row['mann_whitney_p_adj']:.2e}"
+                    )
+                top = sig_ranked.loc[sig_ranked['median_z_diff'].abs().idxmax()]
+                results['top_mod_ranked'] = top['modification']
+                results['top_mod_direction'] = top['direction']
+        else:
+            results['n_significant_ranked'] = 0
 
     # =========================================================================
     # Step 6: Generate visualizations
@@ -314,6 +357,27 @@ def run_analysis(args) -> dict:
         str(figures_dir),
         rbp_name=args.rbp
     )
+
+    # Ranked enrichment plots
+    if len(ranked_results) > 0:
+        for mod_name in args.mod_names:
+            col = f'has_{mod_name}'
+            if col in scored_df.columns:
+                row = ranked_results[ranked_results['modification'] == mod_name]
+                if len(row) > 0:
+                    viz.plot_ranked_enrichment_analysis(
+                        scored_df=scored_df,
+                        mod_name=mod_name,
+                        output_path=str(figures_dir / f'{mod_name}_ranked_enrichment.png'),
+                        stats=row.iloc[0].to_dict(),
+                        title_prefix=args.rbp
+                    )
+
+        viz.plot_all_mods_ranked_summary(
+            results_df=ranked_results,
+            output_path=str(figures_dir / 'ranked_enrichment_summary.png'),
+            title_prefix=args.rbp
+        )
 
     # =========================================================================
     # Summary
@@ -422,6 +486,21 @@ Gold Standard RBPs (24 total):
     parser.add_argument(
         '--gat-n-samples', type=int, default=10000,
         help='Number of GAT permutations (default: 10000)'
+    )
+    parser.add_argument(
+        '--enrichment-method',
+        choices=['categorical', 'ranked', 'both'],
+        default='both',
+        help=(
+            'Enrichment analysis method: '
+            'categorical = Fisher\'s exact test (discrepant vs canonical); '
+            'ranked = Mann-Whitney U on all peaks by Z-score; '
+            'both = run both (default)'
+        )
+    )
+    parser.add_argument(
+        '--overlap-window', type=int, default=0,
+        help='Window size in bp for modification overlap (0 = exact, default: 0)'
     )
 
     args = parser.parse_args()
