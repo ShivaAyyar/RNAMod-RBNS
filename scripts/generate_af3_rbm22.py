@@ -49,7 +49,7 @@ import pybedtools
 # Constants
 # ---------------------------------------------------------------------------
 
-MOD_CCD  = "PSU"   # CCD code for pseudouridine
+MOD_CCD  = "CCD_PSU"   # CCD code for pseudouridine (must include CCD_ prefix)
 HALF_WIN = 15      # nucleotides on each side → 31 nt total centred on Ψ
 
 
@@ -267,13 +267,13 @@ def build_af3_json(
 
     return {
         "name": job_name,
-        "modelSeeds": seeds,
+        "modelSeeds": [str(s) for s in seeds],  # must be strings per AF3 spec
         "sequences": [
             {"proteinChain": {"sequence": protein_seq, "count": 1}},
             {"rnaSequence": rna_entity},
         ],
         "dialect": "alphafoldserver",
-        "version": 2,
+        "version": 1,
     }
 
 
@@ -388,8 +388,9 @@ def main():
     )
 
     # ------------------------------------------------------------------
-    # 3. Generate JSONs
+    # 3. Build all job dicts
     # ------------------------------------------------------------------
+    all_jobs      = []   # accumulated job dicts for the single output JSON
     manifest_rows = []
     n_pairs  = 0
     n_single = 0
@@ -397,9 +398,8 @@ def main():
 
     for i, row in selected.iterrows():
         peak_id  = row["peak_id"]
-        # Safe filename stem: replace special chars
+        # Safe job-name stem: replace special chars
         safe_id  = re.sub(r"[^A-Za-z0-9_\-]", "_", peak_id)
-        # Shorten to keep filenames manageable
         safe_id  = re.sub(r"_+", "_", safe_id).strip("_")[:60]
 
         # Extract pseudoU window if this peak overlaps a Ψ site
@@ -411,42 +411,37 @@ def main():
                 continue
 
         if rna_info is not None:
-            rna_seq    = rna_info["rna_sequence"]
-            psu_pos    = rna_info["pseudou_rna_pos"]
-            base       = rna_info["base_at_site"]
+            rna_seq = rna_info["rna_sequence"]
+            psu_pos = rna_info["pseudou_rna_pos"]
+            base    = rna_info["base_at_site"]
         else:
             # No pseudoU overlap — use full peak sequence, no modification
-            rna_seq    = row["sequence"]
-            psu_pos    = None
-            base       = "N/A"
+            rna_seq = row["sequence"]
+            psu_pos = None
+            base    = "N/A"
 
-        # --- Unmodified JSON ---
+        # --- Unmodified job ---
         name_unmod = f"RBM22_{safe_id}_unmod"
         job_unmod  = build_af3_json(name_unmod, protein_seq, rna_seq,
                                     pseudou_pos=None, seeds=args.seeds)
         errs_unmod = validate_job(job_unmod)
+        all_jobs.append(job_unmod)
 
-        path_unmod = output_dir / f"{name_unmod}.json"
-        with open(path_unmod, "w") as fh:
-            json.dump(job_unmod, fh, indent=2)
-
-        # --- Modified JSON (only when pseudoU site is known) ---
-        path_mod  = None
-        errs_mod  = []
+        # --- Modified job (only when pseudoU site is known) ---
+        errs_mod = []
+        name_mod = None
         if psu_pos is not None:
             name_mod = f"RBM22_{safe_id}_pseudoU"
             job_mod  = build_af3_json(name_mod, protein_seq, rna_seq,
                                       pseudou_pos=psu_pos, seeds=args.seeds)
-            errs_mod  = validate_job(job_mod)
-            path_mod  = output_dir / f"{name_mod}.json"
-            with open(path_mod, "w") as fh:
-                json.dump(job_mod, fh, indent=2)
+            errs_mod = validate_job(job_mod)
+            all_jobs.append(job_mod)
             n_pairs += 1
         else:
             n_single += 1
 
         # Report
-        status = "✓" if not errs_unmod and not errs_mod else "✗"
+        status     = "✓" if not errs_unmod and not errs_mod else "✗"
         pair_label = "(pair)" if psu_pos else "(unmod only)"
         print(f"  {status} [{i+1:02d}] {safe_id[:40]} {pair_label}")
         if errs_unmod:
@@ -459,24 +454,28 @@ def main():
             n_errors += 1
 
         manifest_rows.append({
-            "peak_number":      i + 1,
-            "peak_id":          peak_id,
-            "has_pseudou":      row["has_pseudou"],
-            "score_max":        row["score_max"],
-            "rna_sequence":     rna_seq,
-            "rna_length":       len(rna_seq),
-            "pseudou_rna_pos":  psu_pos,
-            "base_at_site":     base,
-            "protein_id":       protein_name,
-            "protein_length":   len(protein_seq),
-            "json_unmodified":  path_unmod.name,
-            "json_modified":    path_mod.name if path_mod else "",
+            "peak_number":     i + 1,
+            "peak_id":         peak_id,
+            "has_pseudou":     row["has_pseudou"],
+            "score_max":       row["score_max"],
+            "rna_sequence":    rna_seq,
+            "rna_length":      len(rna_seq),
+            "pseudou_rna_pos": psu_pos,
+            "base_at_site":    base,
+            "protein_id":      protein_name,
+            "protein_length":  len(protein_seq),
+            "job_unmodified":  name_unmod,
+            "job_modified":    name_mod if name_mod else "",
         })
 
     # ------------------------------------------------------------------
-    # 4. Write manifest
+    # 4. Write single combined JSON (list of job dicts) + manifest
     # ------------------------------------------------------------------
-    manifest_df = pd.DataFrame(manifest_rows)
+    combined_path = output_dir / "RBM22_pseudoU_jobs.json"
+    with open(combined_path, "w") as fh:
+        json.dump(all_jobs, fh, indent=2)
+
+    manifest_df   = pd.DataFrame(manifest_rows)
     manifest_path = output_dir / "manifest.csv"
     manifest_df.to_csv(manifest_path, index=False)
 
@@ -484,11 +483,11 @@ def main():
     print(f"\n{'='*60}")
     print(f"Done.")
     print(f"  Peaks processed : {len(manifest_rows)}")
-    print(f"  Paired jobs     : {n_pairs} pairs ({n_pairs * 2} files)")
+    print(f"  Paired jobs     : {n_pairs} pairs")
     print(f"  Unmod-only jobs : {n_single}")
-    print(f"  Total JSON files: {total_jobs}")
+    print(f"  Total jobs      : {total_jobs}")
     print(f"  Validation errors: {n_errors}")
-    print(f"  Output directory: {output_dir}")
+    print(f"  Output JSON     : {combined_path}")
     print(f"  Manifest        : {manifest_path}")
     print(f"{'='*60}")
 
