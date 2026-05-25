@@ -1,8 +1,41 @@
+#!/usr/bin/env python3
+"""
+Process RMBase v3.0 Modification Data for RNAMod-RBNS Pipeline
+
+Extracts and filters RNA modification sites from RMBase v3.0 files,
+converting them to BED6 format for use with bedtools.
+
+RMBase v3.0 Format (29 columns for human):
+    1: Chrom, 2: Start, 3: End, 4: modID, 5: Score, 6: Strand,
+    7: modType, 8: supportNum, 9-11: support/pub lists,
+    12: cellList, 13: seqTypeList, 14-18: gene info, 19: Seq,
+    20: motifScore, 21-29: additional annotations
+
+Output BED6 format:
+    chrom  start  end  modID  score  strand
+
+Usage:
+    # Process all modifications for a cell line
+    python scripts/process_rmbase_mods.py --cell-line HepG2
+
+    # Process specific modification
+    python scripts/process_rmbase_mods.py --mod-type m6A --cell-line HepG2
+
+    # Use all sites (no cell line filter)
+    python scripts/process_rmbase_mods.py --mod-type Pseudo --all-sites
+
+    # Process all modifications for both cell lines
+    python scripts/process_rmbase_mods.py --setup-all
+"""
+
 import argparse
+import gzip
 import tarfile
 import os
 import sys
 from pathlib import Path
+from collections import defaultdict
+
 
 # Mapping of modification types to filenames
 MOD_FILES = {
@@ -34,23 +67,26 @@ OUTPUT_NAMES = {
     'ac4C': 'ac4C.bed',
 }
 
+
 def extract_archive(archive_path, output_dir):
-    """Extract tar.gz archive"""
+    """Extract tar.gz archive if not already extracted."""
     archive_path = Path(archive_path)
     if not archive_path.exists():
-        print("Archive_path (.tar.gz) file does not exist")
         return None
-    
+
     with tarfile.open(archive_path, 'r:gz') as tar:
         members = tar.getnames()
         for member in members:
             if member.endswith('.bed'):
                 target = output_dir / member
-                tar.extract(member, output_dir)
+                if not target.exists():
+                    tar.extract(member, output_dir)
                 return output_dir / member
     return None
 
-def process_rmbase_file(input_path, output_path, cell_line=None, min_support=1, min_motif_score=None):
+
+def process_rmbase_file(input_path, output_path, cell_line=None, min_support=1,
+                        min_motif_score=None):
     """
     Process RMBase file and extract sites.
 
@@ -64,7 +100,6 @@ def process_rmbase_file(input_path, output_path, cell_line=None, min_support=1, 
     Returns:
         dict with statistics
     """
-
     input_path = Path(input_path)
     output_path = Path(output_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -87,16 +122,14 @@ def process_rmbase_file(input_path, output_path, cell_line=None, min_support=1, 
             stats['total_lines'] += 1
 
             fields = line.strip().split('\t')
-            # skips incomplete lines
             if len(fields) < 12:
                 continue
-            
-            #Classifies each entry of the .bed file (custom format found at: http://bioinformaticsscience.cn/rmbase/download.php)
+
             chrom = fields[0]
             start = fields[1]
             end = fields[2]
             mod_id = fields[3]
-            #score = fields[4]
+            score = fields[4]
             strand = fields[5]
             support_num = int(fields[7]) if fields[7].isdigit() else 1
             cell_list = fields[11]
@@ -108,14 +141,14 @@ def process_rmbase_file(input_path, output_path, cell_line=None, min_support=1, 
                     motif_score = float(fields[19])
                 except ValueError:
                     pass
-            
-            # Applying Filters
-            # Minimum Support filter
+
+            # Apply filters
+            # Support filter
             if support_num < min_support:
                 stats['support_filter'] += 1
                 continue
 
-            # Motif score filter (pretty sure unused)
+            # Motif score filter
             if min_motif_score is not None and motif_score is not None:
                 if motif_score < min_motif_score:
                     stats['motif_filter'] += 1
@@ -129,8 +162,9 @@ def process_rmbase_file(input_path, output_path, cell_line=None, min_support=1, 
                     continue
                 stats['cell_line_matches'] += 1
 
-            # Writing filtered BED6 file
-            bed_score = support_num
+            # Write BED6 format
+            # Use motif score as BED score if available, otherwise support count
+            bed_score = int(motif_score * 200) if motif_score else min(support_num * 100, 1000)
             outfile.write(f"{chrom}\t{start}\t{end}\t{mod_id}\t{bed_score}\t{strand}\n")
             stats['kept_lines'] += 1
 
@@ -175,6 +209,7 @@ def setup_all_modifications(mods_dir, cell_lines=None):
             print(f"  Extracted: {archive.name}")
     print()
 
+    # Process for each cell line
     for cell_line in cell_lines:
         print(f"\n{'='*60}")
         print(f"Processing for {cell_line}")
@@ -197,13 +232,17 @@ def setup_all_modifications(mods_dir, cell_lines=None):
             # For others (Ψ, m5C, ac4C), use all sites (no cell-specific data)
             if mod_type == 'm6A':
                 # Check if this cell line has data
+                with open(input_file, 'r') as f:
+                    sample_line = f.readline()
+                    has_cell_data = cell_line in sample_line
+
                 # Read more lines to check
                 cell_line_count = 0
                 with open(input_file, 'r') as f:
                     for i, line in enumerate(f):
                         if cell_line in line:
                             cell_line_count += 1
-                        if cell_line_count > 0:
+                        if i > 10000:
                             break
 
                 if cell_line_count > 0:

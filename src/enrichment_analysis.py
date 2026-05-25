@@ -90,9 +90,10 @@ def get_overlap_mask(
     mods = pybedtools.BedTool(mod_bed)
 
     if window > 0 and chrom_sizes:
-        peaks_q = peaks.slop(b=window, g=chrom_sizes)
-        # -wa returns original (unslopped) A-record coordinates
-        overlapping_feats = peaks_q.intersect(mods, u=True, wa=True)
+        # Slop the mods (B), not the peaks (A), so A coordinates remain
+        # identical to the original peaks and the coord_to_idx lookup works.
+        mods_q = mods.slop(b=window, g=chrom_sizes)
+        overlapping_feats = peaks.intersect(mods_q, u=True)
     else:
         overlapping_feats = peaks.intersect(mods, u=True)
 

@@ -334,12 +334,14 @@ Examples:
     parser.add_argument(
         '--use-max-across-concentrations',
         action='store_true',
-        help='Use max R-value across all concentrations instead of highest concentration'
+        help='Use max R-value across all concentrations instead of highest concentration only'
     )
 
     args = parser.parse_args()
 
-    # Determine whether to use max concentration or max across all
+    # Default: use highest concentration column (correct for ENCODE RBNS files
+    # where the last column is the highest protein concentration).
+    # Pass --use-max-across-concentrations to take the max across all columns.
     use_max_conc = not args.use_max_across_concentrations
 
     if args.validate:

@@ -37,10 +37,12 @@ import peak_analysis as pa
 import enrichment_analysis as ea
 import visualization as viz
 
-# The 24 "Gold Standard" RBPs with both RBNS and eCLIP data
+# The 23 "Gold Standard" RBPs with eCLIP data (PTBP1, not PTBP3)
+# Note: only 15 of these have RBNS data; the remaining 8 (QKI, SRSF1, MATR3,
+# HNRNPA1, HNRNPM, NONO, U2AF2, PTBP1) lack RBNS files and cannot be analyzed.
 GOLD_STANDARD_RBPS = [
     'IGF2BP1', 'IGF2BP2', 'HNRNPC', 'TIA1', 'HNRNPK', 'PCBP2',
-    'RBFOX2', 'PTBP3', 'TARDBP', 'QKI', 'SRSF1', 'SRSF9',
+    'RBFOX2', 'PTBP1', 'TARDBP', 'QKI', 'SRSF1', 'SRSF9',
     'RBM22', 'TRA2A', 'HNRNPL', 'LIN28B', 'ZNF326', 'FUS',
     'MATR3', 'HNRNPA1', 'HNRNPM', 'NONO', 'U2AF2', 'EWSR1'
 ]

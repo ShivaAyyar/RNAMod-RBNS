@@ -312,11 +312,18 @@ def classify_peaks(
     """
     logger.info("Classifying peaks...")
 
-    canonical = scored_df[scored_df['score_max'] >= canonical_threshold].copy()
-    discrepant = scored_df[scored_df['score_max'] < discrepant_threshold].copy()
-    intermediate = scored_df[
-        (scored_df['score_max'] >= discrepant_threshold) &
-        (scored_df['score_max'] < canonical_threshold)
+    # Exclude peaks with -inf score (sequence shorter than k-mer size due to
+    # chromosome boundary clipping); these are unscored, not discrepant.
+    scoreable = scored_df[scored_df['score_max'] != float('-inf')]
+    n_unscored = len(scored_df) - len(scoreable)
+    if n_unscored > 0:
+        logger.warning(f"Excluded {n_unscored} peaks with sequence shorter than k-mer size")
+
+    canonical = scoreable[scoreable['score_max'] >= canonical_threshold].copy()
+    discrepant = scoreable[scoreable['score_max'] < discrepant_threshold].copy()
+    intermediate = scoreable[
+        (scoreable['score_max'] >= discrepant_threshold) &
+        (scoreable['score_max'] < canonical_threshold)
     ].copy()
 
     logger.info(

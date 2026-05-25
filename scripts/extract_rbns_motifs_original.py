@@ -214,9 +214,16 @@ def main():
    This tool processes raw RBNS data to compute k-mer Z-scores.
 """)
 
-    # Ask user what to do
-    print("\nWould you like to create partial Z-score files using the top motifs?")
-    print("(These will only contain ~5-10 k-mers instead of all 1024)")
+    # Write partial Z-score CSV files for RBPs that have data
+    if top_motifs:
+        print(f"\nWriting partial Z-score files for {len(top_motifs)} RBPs...")
+        os.makedirs(OUTPUT_DIR, exist_ok=True)
+        for rbp, motifs in top_motifs.items():
+            write_csv_for_rbp(rbp, motifs, OUTPUT_DIR)
+        print(f"\nNOTE: Files contain only ~5-10 k-mers per RBP, not all 1024.")
+        print("      Results will be less accurate than full RBNS pipeline output.")
+    else:
+        print("\nNo motif data found. Check that mmc4.xlsx is present in data/rbns/.")
 
 
 if __name__ == '__main__':

@@ -17,7 +17,7 @@
       }
     ],
     "dialect": "alphafoldserver",
-    "version": 1
+    "version": 2
   },
   {
     "name": "RBM22_RBM22_K562_IDR_chr15_67839955-67840005_-_pseudoU",
@@ -43,7 +43,7 @@
       }
     ],
     "dialect": "alphafoldserver",
-    "version": 1
+    "version": 2
   },
   {
     "name": "RBM22_RBM22_K562_IDR_chr8_56917125-56917175_unmod",
@@ -63,7 +63,7 @@
       }
     ],
     "dialect": "alphafoldserver",
-    "version": 1
+    "version": 2
   },
   {
     "name": "RBM22_RBM22_K562_IDR_chr8_56917125-56917175_pseudoU",
@@ -89,7 +89,7 @@
       }
     ],
     "dialect": "alphafoldserver",
-    "version": 1
+    "version": 2
   },
   {
     "name": "RBM22_RBM22_K562_IDR_chr3_196784996-196785046_-_unmod",
@@ -109,7 +109,7 @@
       }
     ],
     "dialect": "alphafoldserver",
-    "version": 1
+    "version": 2
   },
   {
     "name": "RBM22_RBM22_K562_IDR_chr3_196784996-196785046_-_pseudoU",
@@ -135,7 +135,7 @@
       }
     ],
     "dialect": "alphafoldserver",
-    "version": 1
+    "version": 2
   },
   {
     "name": "RBM22_RBM22_K562_IDR_chr11_63970497-63970547_unmod",
@@ -155,7 +155,7 @@
       }
     ],
     "dialect": "alphafoldserver",
-    "version": 1
+    "version": 2
   },
   {
     "name": "RBM22_RBM22_K562_IDR_chr11_63970497-63970547_pseudoU",
@@ -181,7 +181,7 @@
       }
     ],
     "dialect": "alphafoldserver",
-    "version": 1
+    "version": 2
   },
   {
     "name": "RBM22_RBM22_K562_IDR_chr1_27325245-27325295_unmod",
@@ -201,7 +201,7 @@
       }
     ],
     "dialect": "alphafoldserver",
-    "version": 1
+    "version": 2
   },
   {
     "name": "RBM22_RBM22_K562_IDR_chr1_27325245-27325295_pseudoU",
@@ -227,7 +227,7 @@
       }
     ],
     "dialect": "alphafoldserver",
-    "version": 1
+    "version": 2
   },
   {
     "name": "RBM22_RBM22_K562_IDR_chr19_893507-893557_unmod",
@@ -247,7 +247,7 @@
       }
     ],
     "dialect": "alphafoldserver",
-    "version": 1
+    "version": 2
   },
   {
     "name": "RBM22_RBM22_K562_IDR_chr19_893507-893557_pseudoU",
@@ -273,7 +273,7 @@
       }
     ],
     "dialect": "alphafoldserver",
-    "version": 1
+    "version": 2
   },
   {
     "name": "RBM22_RBM22_K562_IDR_chr19_893514-893564_unmod",
@@ -293,7 +293,7 @@
       }
     ],
     "dialect": "alphafoldserver",
-    "version": 1
+    "version": 2
   },
   {
     "name": "RBM22_RBM22_K562_IDR_chr19_893514-893564_pseudoU",
@@ -319,7 +319,7 @@
       }
     ],
     "dialect": "alphafoldserver",
-    "version": 1
+    "version": 2
   },
   {
     "name": "RBM22_RBM22_K562_IDR_chr3_195214815-195214865_unmod",
@@ -339,7 +339,7 @@
       }
     ],
     "dialect": "alphafoldserver",
-    "version": 1
+    "version": 2
   },
   {
     "name": "RBM22_RBM22_K562_IDR_chr3_195214815-195214865_pseudoU",
@@ -365,7 +365,7 @@
       }
     ],
     "dialect": "alphafoldserver",
-    "version": 1
+    "version": 2
   },
   {
     "name": "RBM22_RBM22_K562_IDR_chr11_63970492-63970542_unmod",
@@ -385,7 +385,7 @@
       }
     ],
     "dialect": "alphafoldserver",
-    "version": 1
+    "version": 2
   },
   {
     "name": "RBM22_RBM22_K562_IDR_chr11_63970492-63970542_pseudoU",
@@ -411,7 +411,7 @@
       }
     ],
     "dialect": "alphafoldserver",
-    "version": 1
+    "version": 2
   },
   {
     "name": "RBM22_RBM22_K562_IDR_chr11_63970489-63970539_unmod",
@@ -431,7 +431,7 @@
       }
     ],
     "dialect": "alphafoldserver",
-    "version": 1
+    "version": 2
   },
   {
     "name": "RBM22_RBM22_K562_IDR_chr11_63970489-63970539_pseudoU",
@@ -457,7 +457,7 @@
       }
     ],
     "dialect": "alphafoldserver",
-    "version": 1
+    "version": 2
   },
   {
     "name": "RBM22_RBM22_K562_IDR_chr8_56917103-56917153_unmod",
@@ -477,7 +477,7 @@
       }
     ],
     "dialect": "alphafoldserver",
-    "version": 1
+    "version": 2
   },
   {
     "name": "RBM22_RBM22_K562_IDR_chr8_56917103-56917153_pseudoU",
@@ -503,7 +503,7 @@
       }
     ],
     "dialect": "alphafoldserver",
-    "version": 1
+    "version": 2
   },
   {
     "name": "RBM22_RBM22_K562_IDR_chr19_893503-893553_unmod",
@@ -523,7 +523,7 @@
       }
     ],
     "dialect": "alphafoldserver",
-    "version": 1
+    "version": 2
   },
   {
     "name": "RBM22_RBM22_K562_IDR_chr19_893503-893553_pseudoU",
@@ -549,7 +549,7 @@
       }
     ],
     "dialect": "alphafoldserver",
-    "version": 1
+    "version": 2
   },
   {
     "name": "RBM22_RBM22_K562_IDR_chr4_39297596-39297646_-_unmod",
@@ -569,7 +569,7 @@
       }
     ],
     "dialect": "alphafoldserver",
-    "version": 1
+    "version": 2
   },
   {
     "name": "RBM22_RBM22_K562_IDR_chr4_39297596-39297646_-_pseudoU",
@@ -595,7 +595,7 @@
       }
     ],
     "dialect": "alphafoldserver",
-    "version": 1
+    "version": 2
   },
   {
     "name": "RBM22_RBM22_K562_IDR_chr4_88684851-88684901_-_unmod",
@@ -615,7 +615,7 @@
       }
     ],
     "dialect": "alphafoldserver",
-    "version": 1
+    "version": 2
   },
   {
     "name": "RBM22_RBM22_K562_IDR_chr4_88684851-88684901_-_pseudoU",
@@ -641,7 +641,7 @@
       }
     ],
     "dialect": "alphafoldserver",
-    "version": 1
+    "version": 2
   },
   {
     "name": "RBM22_RBM22_K562_IDR_chr12_97721733-97721783_unmod",
@@ -661,7 +661,7 @@
       }
     ],
     "dialect": "alphafoldserver",
-    "version": 1
+    "version": 2
   },
   {
     "name": "RBM22_RBM22_K562_IDR_chr12_97721733-97721783_pseudoU",
@@ -687,6 +687,6 @@
       }
     ],
     "dialect": "alphafoldserver",
-    "version": 1
+    "version": 2
   }
 ]

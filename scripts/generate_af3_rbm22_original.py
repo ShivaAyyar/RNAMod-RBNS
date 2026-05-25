@@ -271,7 +271,7 @@ def build_af3_json(
             {"rnaSequence": rna_entity},
         ],
         "dialect": "alphafoldserver",
-        "version": 1,
+        "version": 2,
     }
 
 
